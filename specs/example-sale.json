@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "client_sale_id": "026015b0-1d76-555c-9a67-42c39ec3eaad",
+  "device_id": "0482e915-814d-5024-8ab0-2d27144219ed",
+  "shift_id": "01709b7d-b536-57b0-a4ee-eb061f6d9c1b",
+  "client_created_at": "2026-10-02T06:32:00Z",
+  "was_offline": false,
+  "currency": "SGD",
+  "lines": [
+    {
+      "line_id": "8929a197-234c-582c-ba1e-6828967121e3",
+      "product_id": "960e28f5-fb13-5c1d-a871-20414ecdf6d5",
+      "price_revision_id": "6969e908-e7e1-5e95-b788-5a2758f2779b",
+      "sku_snapshot": "DRK-001",
+      "name_snapshot": "Cold Brew",
+      "quantity": 2,
+      "unit_price_minor": 450,
+      "discount_minor": 0,
+      "tax_bps": 0,
+      "tax_minor": 0,
+      "line_total_minor": 900
+    },
+    {
+      "line_id": "c1b3f7e4-3bb3-5e93-81a9-547b26fd83f1",
+      "product_id": "32d1ebe0-a747-562e-a0f2-4eafba0abca9",
+      "price_revision_id": "1a1d75e5-8d9d-5b3d-88e6-819e4e3e0a0e",
+      "sku_snapshot": "SNK-001",
+      "name_snapshot": "Oat Cookies",
+      "quantity": 1,
+      "unit_price_minor": 320,
+      "discount_minor": 0,
+      "tax_bps": 0,
+      "tax_minor": 0,
+      "line_total_minor": 320
+    },
+    {
+      "line_id": "cedcb2f0-b6e2-5f3d-b3d8-08bc7f7a498a",
+      "product_id": "62edb7cf-4b61-54c9-9fd9-d241ab574556",
+      "price_revision_id": "5a8b122e-1c24-5227-ad29-6ee22ca714f4",
+      "sku_snapshot": "DRK-002",
+      "name_snapshot": "Sparkling Water",
+      "quantity": 1,
+      "unit_price_minor": 180,
+      "discount_minor": 0,
+      "tax_bps": 0,
+      "tax_minor": 0,
+      "line_total_minor": 180
+    }
+  ],
+  "payment": {
+    "method": "CASH",
+    "amount_applied_minor": 1400,
+    "tender_minor": 2000,
+    "change_minor": 600
+  },
+  "gross_minor": 1400,
+  "discount_minor": 0,
+  "tax_minor": 0,
+  "total_minor": 1400
+}

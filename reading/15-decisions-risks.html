@@ -1,0 +1,161 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>15 · Decision log, assumptions and risk register</title><style>body{font:16px/1.85 system-ui,-apple-system,"Noto Sans CJK SC",sans-serif;color:#17333b;background:#f3f6f5;margin:0}header{padding:20px max(22px,calc((100vw - 960px)/2));border-bottom:1px solid #d5e2db;background:white;font-size:13px}header a{color:#0b6e61;text-decoration:none}article{max-width:960px;padding:42px 42px 70px;margin:30px auto;background:white;border:1px solid #dbe6df;border-radius:16px}h1{font-size:32px;line-height:1.25}h2{margin-top:36px;font-size:23px;color:#0b6e61}h3{margin-top:30px}a{color:#0b6e61}p{margin:14px 0}blockquote{background:#edf5ef;border-left:4px solid #0b6e61;margin:22px 0;padding:10px 20px}table{border-collapse:collapse;font-size:13px;line-height:1.6;width:100%;margin:25px 0}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #d8e3dd;vertical-align:top}th{background:#e8f2ec}pre{background:#f2f5f2;padding:22px;overflow:auto;border-radius:8px}code{font-size:13px;background:#f1f4f2}nav{display:flex;justify-content:space-between;margin-top:45px}li{margin:10px 0}.tablewrap{overflow:auto}@media(max-width:700px){article{padding:28px 20px;margin:0;border-radius:0}h1{font-size:26px}table{font-size:12px}th,td{padding:8px}body{font-size:15px}}</style><header><a href="../START-HERE.html">COUNTER POS / DOCUMENTATION KIT</a> &nbsp; · &nbsp; <a href="../docs/15-decisions-risks.md">Markdown source</a></header><article><h1>15 · Decision log, assumptions and risk register</h1>
+<blockquote>
+<p>中文重点：这里区分用户明确要求、这次建议和仍然待确认的事项。</p>
+</blockquote>
+<h2>Evidence and precedence</h2>
+<p>The user's confirmed requirements are: standalone PWA POS, GitHub portfolio value, small catalogue, sales/inventory essentials and strong design; then a full documentation ZIP with images, wireframes and design. All more specific choices below are proposed baselines, not claimed user approvals.</p>
+<p>Authority order: accepted future change request → business rules and API contract → database service invariants → screen specification/design tokens → wireframes → rendered mockups → exploratory AI image. Resolve conflicts in an ADR and update linked tests; do not treat decorative text in a concept poster as an API contract.</p>
+<h2>Proposed decisions</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+  <th>ADR</th>
+  <th>Decision</th>
+  <th>Reason / consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>ADR-01</td>
+  <td>Standalone single-store modular monolith</td>
+  <td>Small scope; fewer distributed failure modes</td>
+</tr>
+<tr>
+  <td>ADR-02</td>
+  <td>One active selling device in V1</td>
+  <td>Bounds offline stock and cash-session complexity</td>
+</tr>
+<tr>
+  <td>ADR-03</td>
+  <td>Cash-only offline; external methods recorded online</td>
+  <td>Avoid false electronic-payment verification</td>
+</tr>
+<tr>
+  <td>ADR-04</td>
+  <td>Local atomic outbox + server UUID/hash dedup</td>
+  <td>Recover retries without duplicated business effects</td>
+</tr>
+<tr>
+  <td>ADR-05</td>
+  <td>Stock ledger plus transactional balance projection</td>
+  <td>Auditable history with fast read performance</td>
+</tr>
+<tr>
+  <td>ADR-06</td>
+  <td>Integer minor-unit money; exclusive tax only, sample tax off</td>
+  <td>Deterministic sums; no implied tax compliance</td>
+</tr>
+<tr>
+  <td>ADR-07</td>
+  <td>Online manager refunds; immutable completed history</td>
+  <td>Traceable correction and bounded authorization</td>
+</tr>
+<tr>
+  <td>ADR-08</td>
+  <td>Foreground sync is baseline; Background Sync optional</td>
+  <td>Browser portability [S03]</td>
+</tr>
+<tr>
+  <td>ADR-09</td>
+  <td>Same-origin cookie auth; bounded signed offline permit</td>
+  <td>Clear server/browser trust boundary</td>
+</tr>
+<tr>
+  <td>ADR-10</td>
+  <td>Explicit safe-time service-worker activation</td>
+  <td>Prevent interruption or migration loss [K01]</td>
+</tr>
+<tr>
+  <td>ADR-11</td>
+  <td>React/TS/Vite + Fastify/PostgreSQL/Dexie proposal</td>
+  <td>Shared contracts and portfolio learning; version review needed</td>
+</tr>
+<tr>
+  <td>ADR-12</td>
+  <td>POS header fixed; long admin pages may hide/reveal</td>
+  <td>Documented exception to smart-header default [K01]</td>
+</tr>
+<tr>
+  <td>ADR-13</td>
+  <td>Light theme only in V1; preserve user zoom</td>
+  <td>Keep tested design manageable and accessible</td>
+</tr>
+<tr>
+  <td>ADR-14</td>
+  <td>No actual payment/ERP integration in this release</td>
+  <td>Honest delivery boundary</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Open decisions before coding</h2>
+<p>Approve or replace working brand/repo, target hosting machine, actual package versions, required browsers/physical printer, cashier discount ceiling, offline-permit limits, tax/legal settings, data retention and project license. Defaults are already supplied so design work can proceed; implementation must record how these were resolved without inventing approvals.</p>
+<h2>Risk register</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+  <th>Risk</th>
+  <th>Impact</th>
+  <th>Mitigation</th>
+  <th>Release disposition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Browser storage eviction/device loss</td>
+  <td>Unuploaded sales lost</td>
+  <td>Readiness test, storage monitoring, fast sync, recovery export</td>
+  <td>Residual risk disclosed</td>
+</tr>
+<tr>
+  <td>Duplicate retry / multi-tab race</td>
+  <td>Double sale or stock deduction</td>
+  <td>Stable IDs, unique keys, transaction tests, writer lease</td>
+  <td>Blocking if untested</td>
+</tr>
+<tr>
+  <td>Price/stock change while offline</td>
+  <td>Variance after money accepted</td>
+  <td>Historical snapshots, permit scope, exception reconciliation</td>
+  <td>Controlled, not hidden</td>
+</tr>
+<tr>
+  <td>Manual payment mislabelled verified</td>
+  <td>False revenue assurance</td>
+  <td>Explicit labels; external reference; no gateway claim</td>
+  <td>Blocking UI defect</td>
+</tr>
+<tr>
+  <td>Refund race / rounding drift</td>
+  <td>Over-refund</td>
+  <td>Locked cumulative entitlement tests</td>
+  <td>Blocking financial defect</td>
+</tr>
+<tr>
+  <td>Update interrupts transaction</td>
+  <td>Corruption/lost work</td>
+  <td>Waiting-worker UX and migration/recovery tests</td>
+  <td>Blocking lifecycle defect</td>
+</tr>
+<tr>
+  <td>Public demo reaches live services</td>
+  <td>Privacy/financial exposure</td>
+  <td>Isolated data/credentials; no real integrations</td>
+  <td>Blocking security defect</td>
+</tr>
+<tr>
+  <td>Scope grows into ERP</td>
+  <td>Incomplete project</td>
+  <td>Stage gates and explicit deferred scope</td>
+  <td>Reject unreviewed additions</td>
+</tr>
+<tr>
+  <td>License/brand assumption</td>
+  <td>Misrepresentation</td>
+  <td>Working identity; no app license assigned</td>
+  <td>Resolve before public release</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Honest completion model</h2>
+<p>A documentation bundle can be complete while application development has not begun. Report artefact generation/validation separately from production software readiness. No arbitrary overall project percentage is assigned here.</p>
+<nav><a href="14-portfolio-demo.html">← Previous</a><a href="16-source-register.html">Next →</a></nav></article></html>

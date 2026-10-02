@@ -1,0 +1,15 @@
+sequenceDiagram
+ actor Cashier
+ participant Device as Device / IndexedDB
+ participant API
+ participant DB as PostgreSQL
+ Cashier->>Device: Confirm cash received
+ Device->>Device: Atomic sale + payment + stock delta + outbox
+ Device-->>Cashier: Local receipt / pending
+ Device->>API: Frozen client UUID
+ API->>DB: Validate + atomic posting + unique UUID
+ DB-->>API: Committed
+ API--xDevice: Response lost
+ Device->>API: Retry unchanged UUID
+ API-->>Device: Existing committed receipt
+ Device->>Device: ACK + stock watermark reconciliation

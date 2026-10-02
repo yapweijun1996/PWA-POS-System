@@ -1,0 +1,73 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>11 · Implementation roadmap and work breakdown</title><style>body{font:16px/1.85 system-ui,-apple-system,"Noto Sans CJK SC",sans-serif;color:#17333b;background:#f3f6f5;margin:0}header{padding:20px max(22px,calc((100vw - 960px)/2));border-bottom:1px solid #d5e2db;background:white;font-size:13px}header a{color:#0b6e61;text-decoration:none}article{max-width:960px;padding:42px 42px 70px;margin:30px auto;background:white;border:1px solid #dbe6df;border-radius:16px}h1{font-size:32px;line-height:1.25}h2{margin-top:36px;font-size:23px;color:#0b6e61}h3{margin-top:30px}a{color:#0b6e61}p{margin:14px 0}blockquote{background:#edf5ef;border-left:4px solid #0b6e61;margin:22px 0;padding:10px 20px}table{border-collapse:collapse;font-size:13px;line-height:1.6;width:100%;margin:25px 0}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #d8e3dd;vertical-align:top}th{background:#e8f2ec}pre{background:#f2f5f2;padding:22px;overflow:auto;border-radius:8px}code{font-size:13px;background:#f1f4f2}nav{display:flex;justify-content:space-between;margin-top:45px}li{margin:10px 0}.tablewrap{overflow:auto}@media(max-width:700px){article{padding:28px 20px;margin:0;border-radius:0}h1{font-size:26px}table{font-size:12px}th,td{padding:8px}body{font-size:15px}}</style><header><a href="../START-HERE.html">COUNTER POS / DOCUMENTATION KIT</a> &nbsp; · &nbsp; <a href="../docs/11-implementation-roadmap.md">Markdown source</a></header><article><h1>11 · Implementation roadmap and work breakdown</h1>
+<blockquote>
+<p>中文重点：按可验收的阶段开发，不给没有依据的“完成百分比”。</p>
+</blockquote>
+<h2>Delivery sequence</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+  <th>Stage</th>
+  <th>Outcome</th>
+  <th>Dependencies</th>
+  <th>Exit evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>M0 · Contract</td>
+  <td>Agree scope, ADRs, target environment and fixtures</td>
+  <td>This kit</td>
+  <td>Reviewed assumptions; repo/branch identified</td>
+</tr>
+<tr>
+  <td>M1 · Foundation</td>
+  <td>App/API scaffolds, auth, shared money, migrations, CI</td>
+  <td>M0</td>
+  <td>Clean build; unit tests; empty DB migration</td>
+</tr>
+<tr>
+  <td>M2 · Catalogue</td>
+  <td>Products, price revisions, receive/adjust ledger</td>
+  <td>M1</td>
+  <td>Duplicate/stale update tests; stock reconciliation</td>
+</tr>
+<tr>
+  <td>M3 · Online sale</td>
+  <td>Cart, cash tender, posting, receipt and sales detail</td>
+  <td>M2</td>
+  <td>T01–T04, T11, T20 integration evidence</td>
+</tr>
+<tr>
+  <td>M4 · Returns/shift</td>
+  <td>Manager refunds, cash in/out, count/close</td>
+  <td>M3</td>
+  <td>Refund concurrency and cash reconciliation</td>
+</tr>
+<tr>
+  <td>M5 · Offline PWA</td>
+  <td>Permit, local atomic sale, outbox, replay, update UX</td>
+  <td>M3/M4</td>
+  <td>Fault-injected T05–T08, T14–T18</td>
+</tr>
+<tr>
+  <td>M6 · Portfolio</td>
+  <td>Overview, responsive polish, docs, clean demo deploy</td>
+  <td>All</td>
+  <td>Clean-clone run, actual browser/device matrix</td>
+</tr>
+</tbody>
+</table></div>
+<p>Do not estimate calendar completion without inspecting the selected repo, implementation team and available environments. These stages are work order, not a promise of background development.</p>
+<h2>Suggested tickets</h2>
+<p>ENG-01 initialize workspace and CI; ENG-02 authentication/role projection; ENG-03 money and tax tests; ENG-04 schema/migration; ENG-05 products/pricing; ENG-06 stock movement service; ENG-07 cart and barcode; ENG-08 cash checkout and atomic posting; ENG-09 idempotent replay; ENG-10 receipts and browser print; ENG-11 refunds and cumulative allocation; ENG-12 shifts and cash movement; ENG-13 offline permit/readiness; ENG-14 IndexedDB commit and writer lease; ENG-15 push/pull sync and stock watermark; ENG-16 service-worker update/migration; ENG-17 dashboards and export; ENG-18 responsive/a11y; ENG-19 security and restore drill; ENG-20 demo evidence and README.</p>
+<p>Each ticket states in-scope files/modules, invariants, tests, migration impact, screenshot states and rollback concerns. Agents should not independently implement competing money algorithms or duplicate a shared schema package.</p>
+<h2>Agent collaboration</h2>
+<p>Architect freezes contract deltas; Developer implements a narrow vertical slice; Reviewer checks business invariants and diff; QA executes independent replay/device scenarios. Roles may be handled by separate runs, but independence must not be invented. A self-authored test is not a third-party audit.</p>
+<p>Inspect <code>git status</code>, branch and uncommitted work before editing. Create a feature branch/worktree without resetting the owner's changes. Keep commits reviewable. Do not auto-merge, deploy, rotate credentials or touch Globe3 without task-specific authorization. The implementation prompt in this kit is a handoff, not permission to execute it on an unknown machine.</p>
+<h2>Development shortcuts that are acceptable</h2>
+<p>Use synthetic fixture images and a seeded demo store; keep styling dependency-light; use an ordinary browser print dialog; defer sophisticated customer management. Build one store well before designing a hosted multi-tenant billing platform.</p>
+<h2>Shortcuts that are not acceptable</h2>
+<p>No “stock = stock − qty” outside a posting transaction; no localStorage-only sales store; no live payment claim for a manual selector; no SQL in UI components; no fixed shared admin password; no service-worker forced reload during payment; no pretending a browser-only demo has a durable backend.</p>
+<h2>Documentation maintenance</h2>
+<p>Update OpenAPI, SQL, business rules and fixtures in the same PR when behavior changes. ADRs record the reason and affected tests. Regenerate screenshots from the implemented build, then replace this kit's visual-study images only when they represent actual behavior. Maintain a visible “planned / implemented / verified” capability table in the eventual repo.</p>
+<nav><a href="10-testing-acceptance.html">← Previous</a><a href="12-deployment-operations.html">Next →</a></nav></article></html>

@@ -1,0 +1,117 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>07 · Database model and persistence contract</title><style>body{font:16px/1.85 system-ui,-apple-system,"Noto Sans CJK SC",sans-serif;color:#17333b;background:#f3f6f5;margin:0}header{padding:20px max(22px,calc((100vw - 960px)/2));border-bottom:1px solid #d5e2db;background:white;font-size:13px}header a{color:#0b6e61;text-decoration:none}article{max-width:960px;padding:42px 42px 70px;margin:30px auto;background:white;border:1px solid #dbe6df;border-radius:16px}h1{font-size:32px;line-height:1.25}h2{margin-top:36px;font-size:23px;color:#0b6e61}h3{margin-top:30px}a{color:#0b6e61}p{margin:14px 0}blockquote{background:#edf5ef;border-left:4px solid #0b6e61;margin:22px 0;padding:10px 20px}table{border-collapse:collapse;font-size:13px;line-height:1.6;width:100%;margin:25px 0}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #d8e3dd;vertical-align:top}th{background:#e8f2ec}pre{background:#f2f5f2;padding:22px;overflow:auto;border-radius:8px}code{font-size:13px;background:#f1f4f2}nav{display:flex;justify-content:space-between;margin-top:45px}li{margin:10px 0}.tablewrap{overflow:auto}@media(max-width:700px){article{padding:28px 20px;margin:0;border-radius:0}h1{font-size:26px}table{font-size:12px}th,td{padding:8px}body{font-size:15px}}</style><header><a href="../START-HERE.html">COUNTER POS / DOCUMENTATION KIT</a> &nbsp; · &nbsp; <a href="../docs/07-database.md">Markdown source</a></header><article><h1>07 · Database model and persistence contract</h1>
+<blockquote>
+<p>中文重点：SQL 是可评审的 reference schema；真正应用还需要 transaction service、权限和 migration 测试。</p>
+</blockquote>
+<h2>Schema authority</h2>
+<p><code>specs/schema.sql</code> is the proposed PostgreSQL relational baseline. It is not an applied migration against the user's data. The SQL includes types, keys, tenant-safe composite references, indexes and selected immutability guards. Cross-row financial invariants are enforced by the application posting service and integration tests; a CHECK constraint cannot validate sums across arbitrary child rows by itself.</p>
+<h2>Entities and ownership</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+  <th>Entity</th>
+  <th>Purpose</th>
+  <th>Key relationship</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>stores</td>
+  <td>Currency/timezone and receipt sequence owner</td>
+  <td>Deployment-level root</td>
+</tr>
+<tr>
+  <td>users</td>
+  <td>Named operator and role</td>
+  <td>Store-scoped, no seed password</td>
+</tr>
+<tr>
+  <td>devices</td>
+  <td>Registered terminal identity and revocation</td>
+  <td>Store-scoped</td>
+</tr>
+<tr>
+  <td>categories / products</td>
+  <td>Catalogue, SKU/barcode, current price revision</td>
+  <td>Store-scoped</td>
+</tr>
+<tr>
+  <td>product_prices</td>
+  <td>Immutable pricing/tax revisions</td>
+  <td>Product and catalogue version</td>
+</tr>
+<tr>
+  <td>shifts</td>
+  <td>Opening cash, business date, closed state and count</td>
+  <td>User + terminal</td>
+</tr>
+<tr>
+  <td>offline_permits</td>
+  <td>Signed authorization metadata and validity</td>
+  <td>Shift + terminal + user</td>
+</tr>
+<tr>
+  <td>sales / sale_lines</td>
+  <td>Posted transaction and historical item snapshot</td>
+  <td>Shift + unique client UUID</td>
+</tr>
+<tr>
+  <td>payments</td>
+  <td>One applied tender per V1 sale</td>
+  <td>Sale; method/verification boundary</td>
+</tr>
+<tr>
+  <td>refunds / refund_lines</td>
+  <td>Separate linked return and historical allocation</td>
+  <td>Original sale and line</td>
+</tr>
+<tr>
+  <td>refund_payments</td>
+  <td>Actual refund method record</td>
+  <td>Refund + current shift</td>
+</tr>
+<tr>
+  <td>stock_balances</td>
+  <td>Transactionally maintained, rebuildable quantity</td>
+  <td>Product + store</td>
+</tr>
+<tr>
+  <td>stock_movements</td>
+  <td>Immutable quantity event with concrete origin</td>
+  <td>Sale line / refund line / admin event</td>
+</tr>
+<tr>
+  <td>cash_movements</td>
+  <td>Signed non-sales cash in/out</td>
+  <td>Current shift</td>
+</tr>
+<tr>
+  <td>audit_events</td>
+  <td>Append-only actor/action/request evidence</td>
+  <td>Store + subject</td>
+</tr>
+<tr>
+  <td>integration_outbox</td>
+  <td>Post-commit delivery state for future adapter</td>
+  <td>Store + unique event ID</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Key constraints</h2>
+<p>All child references carrying store_id use composite foreign keys against <code>(store_id,id)</code> so an API bug cannot accidentally attach one store's sale to another store's product. Server auth remains the first boundary. SKU and barcode normalization rules are identical at import, API and database boundaries. Empty barcode becomes NULL. Products referenced by history are archived, not physically deleted.</p>
+<p>Sales use UUID primary keys and a separate <code>(store_id,client_sale_id)</code> uniqueness rule. Receipt numbers are server allocated and unique per store; UUID is the identity. The receipt sequence is monotonic but not promised gapless. Refund idempotency has the same permanent UUID principle.</p>
+<p>Store timestamp fields as TIMESTAMPTZ, business dates as DATE and money as BIGINT. Clamp API values before conversion to JS numbers. Whole-unit quantity constraints apply to V1. Balance may become negative only through documented completed-offline-sale replay; the database permits this while the service records the exception.</p>
+<h2>Snapshot rules</h2>
+<p>A line contains product_id and price_revision_id for lineage plus sku_snapshot, name_snapshot, unit_price_minor, discount_minor, tax_bps, tax_minor and line_total_minor. Editing today's name or price does not change last month's receipt. Product cost is not part of a cashier bootstrap and is not displayed on receipts.</p>
+<p>Preserve the accepted document's canonical hash with each sale. Store raw reviewed/quarantined sync documents in a separately access-controlled recovery store during implementation; do not turn malformed payloads into posted sales.</p>
+<h2>Posting and refund transactions</h2>
+<p>For a sale, validate all row sums before commit and use stable row lock ordering. The invariant is <code>sales.total = sum(lines.total) = payment.amount_applied</code>; cash tender − change = payment amount. SALE movement quantity equals the negative sold quantity exactly once. For a refund, validate cumulative returned quantity/amount while original lines are locked; RETURN movement exists only for restock=true.</p>
+<p>Stock movements and the balance projection update in the same transaction. Application roles cannot UPDATE/DELETE posted history. Adjustment corrections are compensating events. For ordinary product updates, use version preconditions to avoid lost updates.</p>
+<h2>Index plan</h2>
+<p>Indexes cover normalized active SKU/barcode, product category/active, sale shift/business date, sale creation cursor, original-sale refund lookup, stock product/time, unresolved outbox state and audit subject/time. Explain every additional index with an actual query. Do not index all JSON fields by default or perform a ledger SUM for every product card.</p>
+<h2>Reconciliation queries</h2>
+<p>At backup/restore or maintenance, compare stock_balances to movement sums grouped by store/product; compare sale totals with line and payment sums; compare refunded quantity and amount with original entitlements; verify no cross-store join and no orphaned price revision. All discrepancies generate review output; never silently overwrite the ledger to match a projection.</p>
+<h2>Migration and seed policy</h2>
+<p>Use versioned, reviewed forward migrations plus an explicit rollback/restore strategy. Do not auto-run destructive SQL on startup. Test an empty database and one upgraded from the previous release. Production admin creation is an interactive/secret-managed operation; the fixtures contain synthetic products only. The SQL does not include known passwords, public admin credentials or grant scripts that weaken production access.</p>
+<h2>Deliberate omissions</h2>
+<p>No financial GL, purchase order, payable, customer-credit balance, item serial/batch, unit conversion, lot valuation or reservation model in V1. ERP mapping remains an adapter concern. Do not reinterpret a stock receipt as a supplier invoice.</p>
+<nav><a href="06-offline-sync.html">← Previous</a><a href="08-api-contract.html">Next →</a></nav></article></html>

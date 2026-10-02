@@ -1,0 +1,14 @@
+flowchart LR
+ subgraph Device[Untrusted device]
+ UI[POS UI]
+ IDB[(IndexedDB sale + outbox)]
+ SW[Versioned shell service worker]
+ UI-->IDB
+ SW-->UI
+ Sync[Foreground sync worker]
+ UI-->Sync
+ end
+ Sync--same UUID / HTTPS-->API[Domain API]
+ API--atomic transaction-->PG[(PostgreSQL ledger + projection)]
+ API-.post-commit event.->ERP[Future ERP adapter]
+ PG-->Backup[Encrypted backup / restore test]

@@ -1,0 +1,1878 @@
+openapi: 3.1.0
+info:
+  title: Counter POS proposed V1 API
+  version: 1.0.0
+  description: Design contract, not a live service. Single-store/one selling device.
+    Cash-only offline; external Card/PayNow manually recorded online. No provider
+    integration. See docs/02,06,08. Version 3.1.0 intentionally selected for interoperability.
+servers:
+- url: https://pos.example.invalid/api/v1
+  description: Documentation placeholder; not a live endpoint
+security:
+- cookieAuth: []
+paths:
+  /auth/login:
+    post:
+      summary: Sign in online
+      operationId: post__auth_login
+      description: Validate Origin and login rate limits. Set secure HttpOnly cookie;
+        rotate session. Never return the cookie as JSON.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+      security: []
+  /auth/logout:
+    post:
+      summary: Revoke server session
+      operationId: post__auth_logout
+      description: Revoke server session
+      responses:
+        '204':
+          description: Successful operation
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - cookieAuth: []
+        csrfToken: []
+  /bootstrap:
+    get:
+      summary: Load authorized store/user/device bootstrap
+      operationId: get__bootstrap
+      description: Load authorized store/user/device bootstrap
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bootstrap'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /devices:
+    post:
+      summary: Enroll a named terminal; manager only
+      operationId: post__devices
+      description: Enroll a named terminal; manager only
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceEnroll'
+      security:
+      - cookieAuth: []
+        csrfToken: []
+  /categories:
+    get:
+      summary: List categories
+      operationId: get__categories
+      description: List categories
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+                minItems: 0
+                maxItems: 100
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /products:
+    get:
+      summary: List cashier-safe catalogue projection
+      operationId: get__products
+      description: List cashier-safe catalogue projection
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductsPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - &id001
+        name: cursor
+        in: query
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - &id002
+        name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 160
+    post:
+      summary: Create product and initial price revision; manager only
+      operationId: post__products
+      description: Create product and initial price revision; manager only
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductWrite'
+      security:
+      - cookieAuth: []
+        csrfToken: []
+  /products/{id}:
+    patch:
+      summary: Update or archive product with optimistic version; manager only
+      operationId: patch__products__id_
+      description: Update or archive product with optimistic version; manager only
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdate'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: &id003
+          type: string
+          format: uuid
+      security:
+      - cookieAuth: []
+        csrfToken: []
+  /inventory/balances:
+    get:
+      summary: List stock balance projections; manager
+      operationId: get__inventory_balances
+      description: List stock balance projections; manager
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StockBalance'
+                minItems: 0
+                maxItems: 100
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - *id001
+      - *id002
+  /inventory/ledger:
+    get:
+      summary: Read stock ledger; manager
+      operationId: get__inventory_ledger
+      description: Read stock ledger; manager
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StockMovement'
+                minItems: 0
+                maxItems: 100
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - *id001
+      - *id002
+      - name: product_id
+        in: query
+        schema: *id003
+  /inventory/receipts:
+    post:
+      summary: Receive stock as a ledger movement; manager online
+      operationId: post__inventory_receipts
+      description: quantity_delta must be positive. client_event_id is durable dedup
+        identity. No purchase invoice is created.
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockBalance'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockCommand'
+      security:
+      - cookieAuth: []
+        csrfToken: []
+  /inventory/adjustments:
+    post:
+      summary: Post reasoned quantity adjustment; manager online
+      operationId: post__inventory_adjustments
+      description: Nonzero delta, expected balance version, actor and reason. Atomically
+        write movement and projection; stale version yields 409.
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockBalance'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockCommand'
+      security:
+      - cookieAuth: []
+        csrfToken: []
+  /shifts:
+    post:
+      summary: Open the single active shift online
+      operationId: post__shifts
+      description: Open the single active shift online
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftOpen'
+      security:
+      - cookieAuth: []
+        csrfToken: []
+  /shifts/current:
+    get:
+      summary: Read current shift
+      operationId: get__shifts_current
+      description: Read current shift
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /shifts/{id}/count:
+    post:
+      summary: Save a cash-count draft without closing
+      operationId: post__shifts__id__count
+      description: Save a cash-count draft without closing
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftCount'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id003
+      security:
+      - cookieAuth: []
+        csrfToken: []
+  /shifts/{id}/close:
+    post:
+      summary: Close a fully reconciled shift online
+      operationId: post__shifts__id__close
+      description: Close a fully reconciled shift online
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftClose'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id003
+      security:
+      - cookieAuth: []
+        csrfToken: []
+  /shifts/{id}/cash-movements:
+    post:
+      summary: Record reasoned non-sale cash in or out
+      operationId: post__shifts__id__cash_movements
+      description: Record reasoned non-sale cash in or out
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  id: *id003
+                required:
+                - id
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CashMovement'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id003
+      security:
+      - cookieAuth: []
+        csrfToken: []
+  /shifts/{id}/offline-permit:
+    post:
+      summary: Issue bounded offline authorization after readiness
+      operationId: post__shifts__id__offline_permit
+      description: Issue bounded offline authorization after readiness
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfflinePermit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                device_id: *id003
+              required:
+              - device_id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id003
+      security:
+      - cookieAuth: []
+        csrfToken: []
+  /sales:
+    post:
+      summary: Atomically post one frozen sale
+      operationId: post__sales
+      description: Derive store and cashier from auth. Recompute money; verify price
+        revisions and offline permit; lock shift/balances; write sale, lines, payment,
+        stock, audit and event in one transaction. Return 201 only after commit; 200
+        on identical replay. 409 on same ID with different content; never auto-reprice
+        a completed permitted offline sale.
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema: &id004
+                $ref: '#/components/schemas/SaleResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+        '200':
+          description: Identical replay; returns the original committed result
+          content:
+            application/json:
+              schema: *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleCommand'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema: *id003
+        description: Same client_sale_id/client_refund_id on every exact retry. Changed
+          payload gives 409.
+      security:
+      - cookieAuth: []
+        csrfToken: []
+    get:
+      summary: List posted sale summaries
+      operationId: get__sales
+      description: List posted sale summaries
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SaleResult'
+                    minItems: 0
+                    maxItems: 100
+                  next_cursor:
+                    type:
+                    - string
+                    - 'null'
+                required:
+                - items
+                - next_cursor
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - *id001
+      - *id002
+  /sales/{id}:
+    get:
+      summary: Read immutable sale and receipt snapshots
+      operationId: get__sales__id_
+      description: Read immutable sale and receipt snapshots
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id003
+  /refunds:
+    post:
+      summary: Post linked manager-approved refund online
+      operationId: post__refunds
+      description: Lock original lines. Calculate remaining refundable quantity and
+        cumulative rounding allocation. Commit refund, refund payment, restock movements
+        and audit together. Exactly-once business effect depends on tested durable
+        deduplication, not the header alone.
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema: &id005
+                $ref: '#/components/schemas/RefundResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+        '200':
+          description: Identical replay; returns the original committed result
+          content:
+            application/json:
+              schema: *id005
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundCommand'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema: *id003
+        description: Same client_sale_id/client_refund_id on every exact retry. Changed
+          payload gives 409.
+      security:
+      - cookieAuth: []
+        csrfToken: []
+  /refunds/{id}:
+    get:
+      summary: Read refund result; manager only
+      operationId: get__refunds__id_
+      description: Read refund result; manager only
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id003
+  /reports/daily:
+    get:
+      summary: Read server-posted daily sales; manager only
+      operationId: get__reports_daily
+      description: Read server-posted daily sales; manager only
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: business_date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+  /sync/status:
+    get:
+      summary: Probe authenticated server reachability
+      operationId: get__sync_status
+      description: Probe authenticated server reachability
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStatus'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /sync/catalogue:
+    get:
+      summary: Pull versioned products and tombstones
+      operationId: get__sync_catalogue
+      description: Pull versioned products and tombstones
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogueChanges'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - *id001
+      - *id002
+  /sync/reconciliation:
+    post:
+      summary: Validate terminal upload watermark before closing
+      operationId: post__sync_reconciliation
+      description: Server compares known accepted documents and terminal acknowledgement.
+        A client zero pending count alone is not proof. Token binds shift/version/cursor
+        and is short-lived.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReconciliationResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reconciliation'
+      security:
+      - cookieAuth: []
+        csrfToken: []
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: counter_session
+      description: Secure HttpOnly SameSite session cookie set by server.
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: Authenticated anti-CSRF token; validate Origin too.
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 80
+        message:
+          type: string
+          minLength: 1
+          maxLength: 500
+        request_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        retryable:
+          type: boolean
+        details:
+          type: object
+          additionalProperties: true
+      required:
+      - code
+      - message
+      - request_id
+      - retryable
+    User:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id003
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        role:
+          type: string
+          enum:
+          - CASHIER
+          - MANAGER
+      required:
+      - id
+      - display_name
+      - role
+    Login:
+      type: object
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          format: password
+          minLength: 1
+          maxLength: 200
+          writeOnly: true
+      required:
+      - email
+      - password
+    LoginResult:
+      type: object
+      additionalProperties: false
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        csrf_token:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - user
+      - csrf_token
+    Category:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id003
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        active:
+          type: boolean
+      required:
+      - id
+      - name
+      - active
+    Product:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id003
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        category_id: *id003
+        barcode:
+          type:
+          - string
+          - 'null'
+          maxLength: 80
+        price_revision_id: *id003
+        unit_price_minor: &id006
+          type: integer
+          minimum: 0
+          maximum: 1000000000
+          description: Two-decimal currency minor units; safe integer. No float prices.
+        tax_bps:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        stock_hint:
+          type: integer
+        active:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - id
+      - sku
+      - name
+      - category_id
+      - barcode
+      - price_revision_id
+      - unit_price_minor
+      - tax_bps
+      - stock_hint
+      - active
+      - version
+    ProductWrite:
+      type: object
+      additionalProperties: false
+      properties:
+        sku: &id007
+          type: string
+          minLength: 1
+          maxLength: 64
+        name: &id008
+          type: string
+          minLength: 1
+          maxLength: 160
+        category_id: *id003
+        barcode: &id009
+          type:
+          - string
+          - 'null'
+          maxLength: 80
+        unit_price_minor: *id006
+        cost_minor: *id006
+        tax_bps: &id010
+          type: integer
+          minimum: 0
+          maximum: 10000
+        low_stock_threshold: &id011
+          type: integer
+          minimum: 0
+        active: &id012
+          type: boolean
+      required:
+      - sku
+      - name
+      - category_id
+      - unit_price_minor
+      - cost_minor
+      - tax_bps
+      - low_stock_threshold
+      - active
+    ProductUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        sku: *id007
+        name: *id008
+        category_id: *id003
+        barcode: *id009
+        unit_price_minor: *id006
+        cost_minor: *id006
+        tax_bps: *id010
+        low_stock_threshold: *id011
+        active: *id012
+        expected_version:
+          type: integer
+          minimum: 1
+      required:
+      - expected_version
+    Bootstrap:
+      type: object
+      additionalProperties: false
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        store:
+          type: object
+          additionalProperties: false
+          properties:
+            id: *id003
+            name:
+              type: string
+              minLength: 1
+              maxLength: 120
+            currency:
+              type: string
+              enum:
+              - SGD
+              - MYR
+            timezone:
+              type: string
+              minLength: 1
+              maxLength: 80
+            tax_enabled:
+              type: boolean
+          required:
+          - id
+          - name
+          - currency
+          - timezone
+          - tax_enabled
+        device_id: *id003
+        catalogue_cursor:
+          type: string
+          minLength: 1
+          maxLength: 200
+        csrf_token:
+          type: string
+          minLength: 1
+          maxLength: 200
+        server_time: &id013
+          type: string
+          format: date-time
+      required:
+      - user
+      - store
+      - device_id
+      - catalogue_cursor
+      - csrf_token
+      - server_time
+    PageInfo:
+      type: object
+      additionalProperties: false
+      properties:
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 200
+      required:
+      - next_cursor
+    ProductsPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+          minItems: 0
+          maxItems: 100
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 200
+      required:
+      - items
+      - next_cursor
+    StockBalance:
+      type: object
+      additionalProperties: false
+      properties:
+        product_id: *id003
+        quantity:
+          type: integer
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - product_id
+      - quantity
+      - version
+    StockCommand:
+      type: object
+      additionalProperties: false
+      properties:
+        client_event_id: *id003
+        product_id: *id003
+        quantity_delta:
+          type: integer
+          minimum: -100000
+          maximum: 100000
+        expected_version:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - client_event_id
+      - product_id
+      - quantity_delta
+      - expected_version
+      - reason
+    StockMovement:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id003
+        product_id: *id003
+        type:
+          type: string
+          enum:
+          - RECEIPT
+          - SALE
+          - RETURN
+          - ADJUSTMENT
+        quantity_delta:
+          type: integer
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 120
+        occurred_at: *id013
+      required:
+      - id
+      - product_id
+      - type
+      - quantity_delta
+      - reference
+      - occurred_at
+    ShiftOpen:
+      type: object
+      additionalProperties: false
+      properties:
+        device_id: *id003
+        opening_float_minor: *id006
+      required:
+      - device_id
+      - opening_float_minor
+    Shift:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id003
+        device_id: *id003
+        business_date:
+          type: string
+          format: date
+        state:
+          type: string
+          enum:
+          - OPEN
+          - CLOSED
+        opening_float_minor: *id006
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - id
+      - device_id
+      - business_date
+      - state
+      - opening_float_minor
+      - version
+    ShiftCount:
+      type: object
+      additionalProperties: false
+      properties:
+        counted_cash_minor: *id006
+        expected_version:
+          type: integer
+          minimum: 1
+        variance_reason:
+          type: string
+          maxLength: 500
+      required:
+      - counted_cash_minor
+      - expected_version
+    ShiftClose:
+      type: object
+      additionalProperties: false
+      properties:
+        counted_cash_minor: *id006
+        expected_version:
+          type: integer
+          minimum: 1
+        reconciliation_token:
+          type: string
+          minLength: 1
+          maxLength: 300
+        variance_reason:
+          type: string
+          maxLength: 500
+      required:
+      - counted_cash_minor
+      - expected_version
+      - reconciliation_token
+    CashMovement:
+      type: object
+      additionalProperties: false
+      properties:
+        client_event_id: *id003
+        amount_minor:
+          type: integer
+          minimum: -1000000000
+          maximum: 1000000000
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - client_event_id
+      - amount_minor
+      - reason
+    OfflinePermit:
+      type: object
+      additionalProperties: false
+      properties:
+        permit_id: *id003
+        shift_id: *id003
+        device_id: *id003
+        expires_at: *id013
+        max_sales:
+          type: integer
+          minimum: 1
+          maximum: 200
+        signed_claims:
+          type: string
+          minLength: 1
+          maxLength: 12000
+      required:
+      - permit_id
+      - shift_id
+      - device_id
+      - expires_at
+      - max_sales
+      - signed_claims
+    SaleLine:
+      type: object
+      additionalProperties: false
+      properties:
+        line_id: *id003
+        product_id: *id003
+        price_revision_id: *id003
+        sku_snapshot:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name_snapshot:
+          type: string
+          minLength: 1
+          maxLength: 160
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 999
+        unit_price_minor: *id006
+        discount_minor: *id006
+        tax_bps:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        tax_minor: *id006
+        line_total_minor: *id006
+      required:
+      - line_id
+      - product_id
+      - price_revision_id
+      - sku_snapshot
+      - name_snapshot
+      - quantity
+      - unit_price_minor
+      - discount_minor
+      - tax_bps
+      - tax_minor
+      - line_total_minor
+    Payment:
+      type: object
+      additionalProperties: false
+      properties:
+        method:
+          type: string
+          enum:
+          - CASH
+          - CARD_MANUAL
+          - PAYNOW_MANUAL
+        amount_applied_minor: *id006
+        tender_minor: *id006
+        change_minor: *id006
+        external_reference:
+          type:
+          - string
+          - 'null'
+          maxLength: 120
+        operator_verified_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+      required:
+      - method
+      - amount_applied_minor
+      - tender_minor
+      - change_minor
+      description: Exactly one per V1 sale. Manual external methods require an operator
+        timestamp/reference and online workflow. CASH cannot claim provider verification.
+        Conditional field and amount invariants are enforced in the service.
+    SaleCommand:
+      type: object
+      additionalProperties: false
+      properties:
+        schema_version:
+          type: integer
+          const: 1
+        client_sale_id: *id003
+        device_id: *id003
+        shift_id: *id003
+        client_created_at: *id013
+        was_offline:
+          type: boolean
+        offline_permit_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        currency:
+          type: string
+          enum:
+          - SGD
+          - MYR
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleLine'
+          minItems: 1
+          maxItems: 100
+        payment:
+          $ref: '#/components/schemas/Payment'
+        gross_minor: *id006
+        discount_minor: *id006
+        tax_minor: *id006
+        total_minor: *id006
+      required:
+      - schema_version
+      - client_sale_id
+      - device_id
+      - shift_id
+      - client_created_at
+      - was_offline
+      - currency
+      - lines
+      - payment
+      - gross_minor
+      - discount_minor
+      - tax_minor
+      - total_minor
+    SaleResult:
+      type: object
+      additionalProperties: false
+      properties:
+        sale_id: *id003
+        client_sale_id: *id003
+        receipt_no:
+          type: string
+          minLength: 1
+          maxLength: 80
+        posted_at: *id013
+        business_date:
+          type: string
+          format: date
+        total_minor: *id006
+        sync_cursor:
+          type: string
+          minLength: 1
+          maxLength: 200
+        review_flags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+          minItems: 0
+          maxItems: 20
+      required:
+      - sale_id
+      - client_sale_id
+      - receipt_no
+      - posted_at
+      - business_date
+      - total_minor
+      - sync_cursor
+      - review_flags
+    SaleDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        sale:
+          $ref: '#/components/schemas/SaleResult'
+        currency:
+          type: string
+          enum:
+          - SGD
+          - MYR
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleLine'
+          minItems: 1
+          maxItems: 100
+        payment:
+          $ref: '#/components/schemas/Payment'
+      required:
+      - sale
+      - currency
+      - lines
+      - payment
+    RefundLine:
+      type: object
+      additionalProperties: false
+      properties:
+        original_sale_line_id: *id003
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 999
+        restock:
+          type: boolean
+      required:
+      - original_sale_line_id
+      - quantity
+      - restock
+    RefundCommand:
+      type: object
+      additionalProperties: false
+      properties:
+        client_refund_id: *id003
+        original_sale_id: *id003
+        shift_id: *id003
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/RefundLine'
+          minItems: 1
+          maxItems: 100
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        payment_method:
+          type: string
+          enum:
+          - CASH
+          - CARD_MANUAL
+          - PAYNOW_MANUAL
+        external_reference:
+          type:
+          - string
+          - 'null'
+          maxLength: 120
+        operator_verified_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+      required:
+      - client_refund_id
+      - original_sale_id
+      - shift_id
+      - lines
+      - reason
+      - payment_method
+      description: Manager online only. Server calculates cumulative refund entitlement
+        from original immutable snapshots; amounts are not trusted from client. External
+        refund evidence is conditionally required.
+    RefundResult:
+      type: object
+      additionalProperties: false
+      properties:
+        refund_id: *id003
+        original_sale_id: *id003
+        total_minor: *id006
+        posted_at: *id013
+      required:
+      - refund_id
+      - original_sale_id
+      - total_minor
+      - posted_at
+    DailyReport:
+      type: object
+      additionalProperties: false
+      properties:
+        business_date:
+          type: string
+          format: date
+        currency:
+          type: string
+          enum:
+          - SGD
+          - MYR
+        gross_minor: *id006
+        refunds_minor: *id006
+        net_minor:
+          type: integer
+          minimum: -1000000000
+          maximum: 1000000000
+        completed_orders:
+          type: integer
+          minimum: 0
+        as_of: *id013
+      required:
+      - business_date
+      - currency
+      - gross_minor
+      - refunds_minor
+      - net_minor
+      - completed_orders
+      - as_of
+    SyncStatus:
+      type: object
+      additionalProperties: false
+      properties:
+        server_time: *id013
+        authenticated:
+          type: boolean
+        cursor:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - server_time
+      - authenticated
+      - cursor
+    CatalogueChanges:
+      type: object
+      additionalProperties: false
+      properties:
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+          minItems: 0
+          maxItems: 100
+        archived_product_ids:
+          type: array
+          items: *id003
+          minItems: 0
+          maxItems: 100
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 200
+        requires_bootstrap:
+          type: boolean
+      required:
+      - products
+      - archived_product_ids
+      - next_cursor
+      - requires_bootstrap
+    Reconciliation:
+      type: object
+      additionalProperties: false
+      properties:
+        shift_id: *id003
+        pending_document_ids:
+          type: array
+          items: *id003
+          minItems: 0
+          maxItems: 200
+        last_acked_cursor:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - shift_id
+      - pending_document_ids
+      - last_acked_cursor
+    ReconciliationResult:
+      type: object
+      additionalProperties: false
+      properties:
+        ready_to_close:
+          type: boolean
+        reconciliation_token:
+          type:
+          - string
+          - 'null'
+          maxLength: 300
+        unresolved_document_ids:
+          type: array
+          items: *id003
+          minItems: 0
+          maxItems: 200
+        expected_cash_minor:
+          type: integer
+      required:
+      - ready_to_close
+      - reconciliation_token
+      - unresolved_document_ids
+      - expected_cash_minor
+    DeviceEnroll:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        installation_id: *id003
+      required:
+      - name
+      - installation_id
+    Device:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id003
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        enrolled_at: *id013
+      required:
+      - id
+      - name
+      - enrolled_at
+  responses:
+    BadRequest:
+      description: Malformed/invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Role or scope denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Idempotency/version/stock conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unprocessable:
+      description: Business rule or review required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Rate limited; honor Retry-After
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unavailable:
+      description: Temporary failure; retry original identity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

@@ -1,0 +1,16 @@
+stateDiagram-v2
+ [*] --> DRAFT
+ DRAFT --> PAYMENT_REVIEW
+ PAYMENT_REVIEW --> LOCAL_COMMITTED: successful IndexedDB transaction
+ LOCAL_COMMITTED --> SERVER_POSTED: server acknowledgement
+ SERVER_POSTED --> [*]
+ state Outbox {
+ [*] --> PENDING
+ PENDING --> SENDING
+ SENDING --> ACKED
+ SENDING --> RETRY: transient
+ RETRY --> SENDING: same identity
+ SENDING --> AUTH_REQUIRED: 401
+ AUTH_REQUIRED --> SENDING: reauthenticate
+ SENDING --> NEEDS_REVIEW: permanent conflict
+ }

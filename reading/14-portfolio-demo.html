@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>14 · GitHub portfolio and demonstration</title><style>body{font:16px/1.85 system-ui,-apple-system,"Noto Sans CJK SC",sans-serif;color:#17333b;background:#f3f6f5;margin:0}header{padding:20px max(22px,calc((100vw - 960px)/2));border-bottom:1px solid #d5e2db;background:white;font-size:13px}header a{color:#0b6e61;text-decoration:none}article{max-width:960px;padding:42px 42px 70px;margin:30px auto;background:white;border:1px solid #dbe6df;border-radius:16px}h1{font-size:32px;line-height:1.25}h2{margin-top:36px;font-size:23px;color:#0b6e61}h3{margin-top:30px}a{color:#0b6e61}p{margin:14px 0}blockquote{background:#edf5ef;border-left:4px solid #0b6e61;margin:22px 0;padding:10px 20px}table{border-collapse:collapse;font-size:13px;line-height:1.6;width:100%;margin:25px 0}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #d8e3dd;vertical-align:top}th{background:#e8f2ec}pre{background:#f2f5f2;padding:22px;overflow:auto;border-radius:8px}code{font-size:13px;background:#f1f4f2}nav{display:flex;justify-content:space-between;margin-top:45px}li{margin:10px 0}.tablewrap{overflow:auto}@media(max-width:700px){article{padding:28px 20px;margin:0;border-radius:0}h1{font-size:26px}table{font-size:12px}th,td{padding:8px}body{font-size:15px}}</style><header><a href="../START-HERE.html">COUNTER POS / DOCUMENTATION KIT</a> &nbsp; · &nbsp; <a href="../docs/14-portfolio-demo.md">Markdown source</a></header><article><h1>14 · GitHub portfolio and demonstration</h1>
+<blockquote>
+<p>中文重点：展示真实能力，不把设计图当作已经完成的应用。</p>
+</blockquote>
+<h2>Repository presentation</h2>
+<p>Suggested repo slug is <code>pwa-pos-system</code>; it has not been created. Describe the eventual app as “A lightweight PWA point-of-sale and inventory ledger with a bounded offline cash workflow.” Keep the name and license pending until reviewed. Pin screenshots, architecture, setup, data reset procedure, test evidence, limitations and a demo link only after that link exists.</p>
+<p>A credible README contains: problem and scope, capability status table, a short demo sequence, actual stack/versions, architecture and tradeoffs, local setup, migrations, tests, failure recovery, security boundary and roadmap. Do not imply experience with a technology merely because a generated scaffold imports it; explain the decisions and code you can defend.</p>
+<h2>Five-minute demonstration script</h2>
+<ol>
+<li>Explain single-store scope and show the product/stock distinction. Create a synthetic item and receive a quantity.</li>
+<li>Sell the canonical 14.00 basket, take 20.00 cash, show 6.00 change, open receipt and inventory movement.</li>
+<li>Show the pending-local label while disconnected, then restore connectivity and demonstrate replay of the same UUID.</li>
+<li>Drop a server response after commit in the test harness and prove no duplicate stock deduction.</li>
+<li>Return one item with manager permissions, show linked history and close a reconciled shift.</li>
+</ol>
+<p>The included HTML prototype supports only the interaction study: product selection, search/category, cart quantities, a simulated cash payment and visual navigation. It is not this complete demo script and has no backend/IndexedDB/PWA guarantee.</p>
+<h2>Synthetic store</h2>
+<p>Sample store name: Everyday Store. Sample cashier: Alex. Currency SGD; tax disabled. Twelve generic products with original vector illustrations; no retailer data or endorsement. The default basket is 2 Cold Brew, 1 Oat Cookies and 1 Sparkling Water, totaling 14.00. Dashboard sample is a separate synthetic daily dataset: 36 orders, gross 486.00, refunds 18.00, net 468.00. Do not present these as collected shop performance.</p>
+<h2>Resume language: only after implementation evidence</h2>
+<p>Possible completed-project statement: “Built a responsive POS and stock ledger using TypeScript and PostgreSQL; implemented idempotent sales posting, role-controlled refunds and a tested IndexedDB outbox for bounded offline cash sales.” Add numerical performance or reliability results only after measuring them.</p>
+<p>For the present delivery, accurate language is: “Prepared a PWA POS product/engineering specification and interactive UI study covering transaction integrity, offline recovery and inventory-ledger design.”</p>
+<h2>Reviewer questions to prepare</h2>
+<p>Why not localStorage? Why separate sale and sync state? How is duplicate replay prevented? What happens when money was accepted offline but stock changed? How does a partial refund handle a rounding remainder? Why is a local payment label not bank confirmation? Why are server and pending-local report totals separated? How is a new service worker prevented from erasing a current sale?</p>
+<h2>Public release hygiene</h2>
+<p>Only synthetic fixtures. No passwords, full bank references, real customer contacts or employer source code. Choose a license intentionally; keep third-party notices. A visual mockup can be published as a design concept, but clearly label its non-implemented states.</p>
+<nav><a href="13-erp-integration.html">← Previous</a><a href="15-decisions-risks.html">Next →</a></nav></article></html>

@@ -1,0 +1,21 @@
+erDiagram
+ STORES ||--o{ USERS : scopes
+ STORES ||--o{ DEVICES : enrolls
+ STORES ||--o{ PRODUCTS : owns
+ CATEGORIES ||--o{ PRODUCTS : groups
+ PRODUCTS ||--|{ PRODUCT_PRICES : revisions
+ DEVICES ||--o{ SHIFTS : opens
+ SHIFTS ||--o{ OFFLINE_PERMITS : authorizes
+ SHIFTS ||--o{ SALES : records
+ SALES ||--|{ SALE_LINES : contains
+ PRODUCTS ||--o{ SALE_LINES : identifies
+ PRODUCT_PRICES ||--o{ SALE_LINES : snapshots
+ SALES ||--|| PAYMENTS : applies
+ SALES ||--o{ REFUNDS : reverses
+ REFUNDS ||--|{ REFUND_LINES : contains
+ SALE_LINES ||--o{ REFUND_LINES : caps
+ REFUNDS ||--|| REFUND_PAYMENTS : records
+ PRODUCTS ||--|| STOCK_BALANCES : projects
+ PRODUCTS ||--o{ STOCK_MOVEMENTS : traces
+ SALE_LINES ||--|| STOCK_MOVEMENTS : sale_deduction
+ REFUND_LINES ||--o| STOCK_MOVEMENTS : optional_restock

@@ -1,0 +1,13 @@
+product_id,sku,name,category,unit_price_minor,cost_minor,opening_units,tax_bps,currency,synthetic
+960e28f5-fb13-5c1d-a871-20414ecdf6d5,DRK-001,Cold Brew,Drinks,450,210,24,0,SGD,true
+32d1ebe0-a747-562e-a0f2-4eafba0abca9,SNK-001,Oat Cookies,Snacks,320,140,18,0,SGD,true
+62edb7cf-4b61-54c9-9fd9-d241ab574556,DRK-002,Sparkling Water,Drinks,180,65,32,0,SGD,true
+a1339658-8114-59e2-be67-ae76832efdd0,DRK-003,Matcha Latte,Drinks,490,230,12,0,SGD,true
+4c4c1b44-f8c0-5121-9601-e85e787d5918,FD-001,Sourdough Roll,Bakery,260,110,9,0,SGD,true
+99c80c3b-93ae-59f8-894d-3cd6e350b611,DRK-004,Orange Juice,Drinks,350,155,16,0,SGD,true
+afe3c32f-991e-5512-acff-45d7fe79a55d,SNK-002,Dark Chocolate,Snacks,420,190,21,0,SGD,true
+6729d57c-6e40-59ae-8a06-ed2b7faf0af0,DRK-005,Fresh Milk,Drinks,290,140,4,0,SGD,true
+4dea6ec9-9b80-5cd8-a4a3-9d005e8fd5bf,DRK-006,Jasmine Tea,Drinks,280,120,15,0,SGD,true
+0d7f6b7d-0199-5c15-b4ab-2ae407970127,SNK-003,Sea Salt Chips,Snacks,240,95,27,0,SGD,true
+8cd4bd49-2e3d-5383-a64a-a768f5f8acd0,HM-001,Hand Wash,Essentials,650,310,6,0,SGD,true
+7168401f-ead3-5529-87ca-c81ed0677cfa,HM-002,Pocket Notebook,Essentials,390,160,14,0,SGD,true

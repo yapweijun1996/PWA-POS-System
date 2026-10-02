@@ -1,0 +1,19 @@
+{
+  "title": "PWA POS Full Documentation and Visual Design Kit",
+  "version": "1.0",
+  "prepared_for": "Yap Wei Jun",
+  "date": "2026-10-02",
+  "status": "Proposed design and documentation; application not implemented",
+  "start_here": "START-HERE.html",
+  "handbook_pages": 40,
+  "atlas_pages": 28,
+  "documentation_chapters": 18,
+  "interface_pngs": 16,
+  "wireframe_boards": 8,
+  "engineering_diagrams": 4,
+  "api_operations": 27,
+  "planned_acceptance_scenarios": 32,
+  "application_acceptance_status": "NOT RUN",
+  "prototype_smoke_assertions_passed": 13,
+  "artifact_checks_passed": 16
+}

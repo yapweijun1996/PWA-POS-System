@@ -1,0 +1,84 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>16 · Source register and provenance</title><style>body{font:16px/1.85 system-ui,-apple-system,"Noto Sans CJK SC",sans-serif;color:#17333b;background:#f3f6f5;margin:0}header{padding:20px max(22px,calc((100vw - 960px)/2));border-bottom:1px solid #d5e2db;background:white;font-size:13px}header a{color:#0b6e61;text-decoration:none}article{max-width:960px;padding:42px 42px 70px;margin:30px auto;background:white;border:1px solid #dbe6df;border-radius:16px}h1{font-size:32px;line-height:1.25}h2{margin-top:36px;font-size:23px;color:#0b6e61}h3{margin-top:30px}a{color:#0b6e61}p{margin:14px 0}blockquote{background:#edf5ef;border-left:4px solid #0b6e61;margin:22px 0;padding:10px 20px}table{border-collapse:collapse;font-size:13px;line-height:1.6;width:100%;margin:25px 0}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #d8e3dd;vertical-align:top}th{background:#e8f2ec}pre{background:#f2f5f2;padding:22px;overflow:auto;border-radius:8px}code{font-size:13px;background:#f1f4f2}nav{display:flex;justify-content:space-between;margin-top:45px}li{margin:10px 0}.tablewrap{overflow:auto}@media(max-width:700px){article{padding:28px 20px;margin:0;border-radius:0}h1{font-size:26px}table{font-size:12px}th,td{padding:8px}body{font-size:15px}}</style><header><a href="../START-HERE.html">COUNTER POS / DOCUMENTATION KIT</a> &nbsp; · &nbsp; <a href="../docs/16-source-register.md">Markdown source</a></header><article><h1>16 · Source register and provenance</h1>
+<p><strong>Checked:</strong> 2 October 2026. Platform behavior may change; recheck supported versions at implementation and release. These sources support specific platform facts, not the entire proposed POS architecture. All writing and vector wireframes in this kit are newly authored; no Odoo code or product screenshots are copied.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+  <th>ID</th>
+  <th>Primary reference</th>
+  <th>What it supports / limitation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>S01</td>
+  <td><a href="https://www.odoo.com/documentation/19.0/applications/sales/point_of_sale.html">Odoo 19 POS</a> and <a href="https://www.odoo.com/documentation/19.0/applications/sales/point_of_sale/use.html">Workflow</a></td>
+  <td>Search-visible official descriptions of browser POS and daily workflow. Full page fetch timed out during this session; no claim to have audited Odoo internals, exact storage or payment code.</td>
+</tr>
+<tr>
+  <td>S02</td>
+  <td><a href="https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers">MDN: Using Service Workers</a> and <a href="https://web.dev/learn/pwa/update">web.dev: Update</a></td>
+  <td>Secure-origin lifecycle and cache/update concepts. Safe checkout deferral is this project's design decision.</td>
+</tr>
+<tr>
+  <td>S03</td>
+  <td><a href="https://developer.mozilla.org/en-US/docs/Web/API/Background_Synchronization_API">MDN: Background Synchronization API</a></td>
+  <td>Limited browser availability; optional background synchronization.</td>
+</tr>
+<tr>
+  <td>S04</td>
+  <td><a href="https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria">MDN: Storage quotas and eviction</a> and <a href="https://webkit.org/blog/14403/updates-to-storage-policy/">WebKit storage policy</a></td>
+  <td>Quotas, estimates, eviction and persistence caveats. No zero-loss promise.</td>
+</tr>
+<tr>
+  <td>S05</td>
+  <td><a href="https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API">MDN: IndexedDB</a></td>
+  <td>Transactional browser storage for structured data.</td>
+</tr>
+<tr>
+  <td>S06</td>
+  <td><a href="https://www.postgresql.org/docs/current/explicit-locking.html">PostgreSQL: Explicit locking</a></td>
+  <td>Row-lock lifetime, conflicts and consistent lock ordering.</td>
+</tr>
+<tr>
+  <td>S07</td>
+  <td><a href="https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html">W3C: WCAG 2.2 target size minimum</a></td>
+  <td>24px minimum criterion and exceptions; our 44px target is a stricter design choice.</td>
+</tr>
+<tr>
+  <td>S08</td>
+  <td><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages">GitHub Docs: What is GitHub Pages?</a></td>
+  <td>Static hosting distinction.</td>
+</tr>
+<tr>
+  <td>S09</td>
+  <td><a href="https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html">OWASP: Session Management</a></td>
+  <td>Secure session lifecycle and cookie considerations.</td>
+</tr>
+<tr>
+  <td>S10</td>
+  <td><a href="https://vite.dev/guide/">Vite: Getting Started</a></td>
+  <td>Client build tooling and templates; no version pin chosen by this kit.</td>
+</tr>
+<tr>
+  <td>S11</td>
+  <td><a href="https://fastify.dev/docs/latest/">Fastify documentation</a></td>
+  <td>Proposed API framework reference.</td>
+</tr>
+<tr>
+  <td>S12</td>
+  <td><a href="https://dexie.org/docs/Tutorial/Getting-started">Dexie: Getting Started</a></td>
+  <td>Library entry point; Dexie Cloud is not selected or required.</td>
+</tr>
+<tr>
+  <td>S13</td>
+  <td><a href="https://spec.openapis.org/oas/v3.1.0.html">OpenAPI 3.1.0</a></td>
+  <td>Machine-readable API contract format; intentionally not described as latest.</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Private source: applied house standard</h2>
+<p>K01: KB-MCP skill <code>pwa:product-standard</code>, version 1.0.0, exact reference <code>270d896a-12b0-40b4-856f-f6274d872c95:3f932f5e-8bc9-40c6-86e9-e676d47e1c52</code>, read in this session. Applied requirements: opaque app chrome, safe areas, explicit user-controlled worker updates with loading feedback, versioned caches, defined offline contract, mobile/accessibility QA and no “manifest means done” claim. No unrelated private project details were included.</p>
+<p>The initial bounded context assembly exceeded its response budget; the narrower memory read and exact skill fetch supplied the relevant PWA standard. No confirmed existing PWA POS repository or approved brand was retrieved.</p>
+<h2>Provenance labels</h2>
+<p>“Requirement” originates in the user's brief; “proposed decision” is new design guidance; “platform fact” refers to the sources above; “synthetic” means invented sample data; “validation result” refers only to executed bundle checks. Images are a visual study, not screenshots of a deployed application.</p>
+<nav><a href="15-decisions-risks.html">← Previous</a><a href="17-asset-guide.html">Next →</a></nav></article></html>

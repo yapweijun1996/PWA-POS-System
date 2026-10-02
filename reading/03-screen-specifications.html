@@ -1,0 +1,108 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>03 · Screens, interaction and responsive behavior</title><style>body{font:16px/1.85 system-ui,-apple-system,"Noto Sans CJK SC",sans-serif;color:#17333b;background:#f3f6f5;margin:0}header{padding:20px max(22px,calc((100vw - 960px)/2));border-bottom:1px solid #d5e2db;background:white;font-size:13px}header a{color:#0b6e61;text-decoration:none}article{max-width:960px;padding:42px 42px 70px;margin:30px auto;background:white;border:1px solid #dbe6df;border-radius:16px}h1{font-size:32px;line-height:1.25}h2{margin-top:36px;font-size:23px;color:#0b6e61}h3{margin-top:30px}a{color:#0b6e61}p{margin:14px 0}blockquote{background:#edf5ef;border-left:4px solid #0b6e61;margin:22px 0;padding:10px 20px}table{border-collapse:collapse;font-size:13px;line-height:1.6;width:100%;margin:25px 0}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #d8e3dd;vertical-align:top}th{background:#e8f2ec}pre{background:#f2f5f2;padding:22px;overflow:auto;border-radius:8px}code{font-size:13px;background:#f1f4f2}nav{display:flex;justify-content:space-between;margin-top:45px}li{margin:10px 0}.tablewrap{overflow:auto}@media(max-width:700px){article{padding:28px 20px;margin:0;border-radius:0}h1{font-size:26px}table{font-size:12px}th,td{padding:8px}body{font-size:15px}}</style><header><a href="../START-HERE.html">COUNTER POS / DOCUMENTATION KIT</a> &nbsp; · &nbsp; <a href="../docs/03-screen-specifications.md">Markdown source</a></header><article><h1>03 · Screens, interaction and responsive behavior</h1>
+<blockquote>
+<p>中文重点：收银页面以最快完成销售为主；后台才展示管理字段。</p>
+</blockquote>
+<h2>Navigation and layout</h2>
+<p>Primary destinations: Sell, Products, Inventory, Sales, Overview. Shift and Sync are persistent utilities; Settings is manager-only. The desktop side rail includes labels, not unexplained icons. At 1024px and above, keep a 360–400px order panel and a flexible product grid. At 768–1023px, use a compact labeled rail and 320px cart when space permits. Below 768px, show a two-column product grid and a fixed “View order · total” action; cart and payment become full-screen sheets.</p>
+<p>The POS header stays visible: an explicit exception to the house standard's hide-on-scroll default because scan/search, connectivity and cashier context are transaction controls. Product lists and long back-office pages may use a hide/reveal header if it does not hide critical status. Respect device safe areas and browser zoom. Never set user-scalable=no.</p>
+<h2>Screen inventory</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+  <th>ID</th>
+  <th>Screen</th>
+  <th>Content and actions</th>
+  <th>Important states</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>UI-01</td>
+  <td>Sign-in / open shift</td>
+  <td>Account sign-in, device identity, opening float</td>
+  <td>Expired session, offline first launch, occupied terminal</td>
+</tr>
+<tr>
+  <td>UI-02</td>
+  <td>Sell</td>
+  <td>Search/scan, category chips, product grid, cart, fixed total</td>
+  <td>Ready, loading, no results, stale catalogue, sold out</td>
+</tr>
+<tr>
+  <td>UI-03</td>
+  <td>Mobile order</td>
+  <td>Full line descriptions, quantity controls, remove/undo, total</td>
+  <td>Empty, stock warning, insufficient permission</td>
+</tr>
+<tr>
+  <td>UI-04</td>
+  <td>Payment</td>
+  <td>Due, method, numeric tender, change, explicit confirm</td>
+  <td>Underpaid, duplicate click disabled, local save failed</td>
+</tr>
+<tr>
+  <td>UI-05</td>
+  <td>Receipt</td>
+  <td>Snapshot lines, local/canonical ID, applied/tender/change, print</td>
+  <td>Saved locally, synced, print failed, reprint</td>
+</tr>
+<tr>
+  <td>UI-06</td>
+  <td>Products</td>
+  <td>Search, category/status filters, SKU/price/stock, editor drawer</td>
+  <td>Validation conflict, archive instead of delete</td>
+</tr>
+<tr>
+  <td>UI-07</td>
+  <td>Inventory</td>
+  <td>On-hand, ledger, receive/adjust panel, version and reason</td>
+  <td>Stale count, negative-stock exception</td>
+</tr>
+<tr>
+  <td>UI-08</td>
+  <td>Sales / return</td>
+  <td>Receipt search, date range, method, detail, manager refund</td>
+  <td>Local-only sale, already refunded, reference unavailable</td>
+</tr>
+<tr>
+  <td>UI-09</td>
+  <td>Overview</td>
+  <td>Gross/refund/net/orders, top items, low stock, sync disclosure</td>
+  <td>No sales, delayed data, mixed business dates</td>
+</tr>
+<tr>
+  <td>UI-10</td>
+  <td>Sync center</td>
+  <td>Pending/acked/retry/review, last attempt, recovery actions</td>
+  <td>Authentication needed, conflict, server unavailable</td>
+</tr>
+<tr>
+  <td>UI-11</td>
+  <td>Close shift</td>
+  <td>Expected cash, actual count, difference, reason</td>
+  <td>Pending sync blocker, count draft, manager review</td>
+</tr>
+<tr>
+  <td>UI-12</td>
+  <td>Settings / updates</td>
+  <td>Store, currency/tax, device, backup help, build update</td>
+  <td>Update waiting, checkout busy, migration blocked</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Product selection and cart</h2>
+<p>Search by normalized product name, SKU and exact barcode. A keyboard-wedge scanner is the baseline input device; camera scanning is a later capability requiring camera permission and device tests. Preserve keyboard focus; do not capture scanner-like typing while a text or money input is active. Unknown barcodes show “Product not found” with search; do not silently create products.</p>
+<p>A product card displays its image or initial, name, price and stock hint. Images are secondary to names. Tap increments quantity and briefly confirms the addition without opening a dialog. Quantity actions have a 44px target; disable minus at the minimum or turn it into explicit remove. Remove offers a short Undo action before checkout. A price override is not an ordinary cashier action.</p>
+<p>Held carts remain on the current device and make no stock reservation. Restore refreshes pricing before payment. “Clear order” confirms if nonempty. There is no customer form in the primary flow; anonymous walk-in is the default.</p>
+<h2>Payment and receipt interaction</h2>
+<p>Payment is a focused task, not another full admin page. Show amount due once at large size, available methods with explanatory text, tender input and change. Underpayment disables confirmation. Enter submits only when the focused form is valid and the user has reviewed the amount; shortcuts must not accidentally finalize a sale while scanning.</p>
+<p>After confirmation, disable repeat submission, persist the local document atomically and only then display success. “Saved on this device — waiting to sync” uses an amber status and does not imply server acknowledgement. An online acknowledged sale displays the canonical receipt and “Synced”. If saving fails, keep the order, tell the cashier that nothing was saved, and stop the handover flow.</p>
+<p>Printing opens browser print as the V1 baseline. A reprint must not create a new sale. Printer failure does not roll back an already accepted sale. 80mm receipt CSS is proposed; physical thermal printer fit, cash drawers and silent printing are not certified by a browser preview.</p>
+<h2>Back office and errors</h2>
+<p>Products editor: name, SKU, barcode, category, price, cost, low-stock threshold, active. Explain duplicate field errors inline and preserve input. Create product does not receive stock. Inventory adjustment shows current quantity, counted quantity, computed delta and mandatory reason before posting.</p>
+<p>A refund form lists remaining returnable quantity and restock choice per original line. Show the final refund amount before external refund/cash handover. A read-only sale detail must still expose useful history to cashiers without refund permission.</p>
+<p>Sync errors use plain language plus expandable technical details. Recovery never offers “Delete pending sale”. Provide retry, reauthenticate, export recovery package and contact manager. Product/stock administration stays disabled offline with the reason adjacent to the action.</p>
+<h2>Accessibility and microcopy</h2>
+<p>Use semantic buttons, dialogs and headings; label icon-only controls; trap and restore dialog focus; expose important status through aria-live without announcing every total change repeatedly. Respect reduced motion. Design target is WCAG 2.2 AA, not an asserted audit result. The 44px house touch target is stricter than WCAG 2.2's 24px minimum-target rule with exceptions. [S07]</p>
+<p>Preferred words: “Take payment”, “Cash received”, “Change”, “Saved on this device”, “Waiting to sync”, “Recorded externally”, “Return items”, “Close shift”. Avoid “Success” for a server write that has not happened. Language switches must not change money, IDs or receipt snapshots.</p>
+<nav><a href="02-business-rules.html">← Previous</a><a href="04-design-system.html">Next →</a></nav></article></html>

@@ -1,0 +1,123 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>01 · Product requirements</title><style>body{font:16px/1.85 system-ui,-apple-system,"Noto Sans CJK SC",sans-serif;color:#17333b;background:#f3f6f5;margin:0}header{padding:20px max(22px,calc((100vw - 960px)/2));border-bottom:1px solid #d5e2db;background:white;font-size:13px}header a{color:#0b6e61;text-decoration:none}article{max-width:960px;padding:42px 42px 70px;margin:30px auto;background:white;border:1px solid #dbe6df;border-radius:16px}h1{font-size:32px;line-height:1.25}h2{margin-top:36px;font-size:23px;color:#0b6e61}h3{margin-top:30px}a{color:#0b6e61}p{margin:14px 0}blockquote{background:#edf5ef;border-left:4px solid #0b6e61;margin:22px 0;padding:10px 20px}table{border-collapse:collapse;font-size:13px;line-height:1.6;width:100%;margin:25px 0}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #d8e3dd;vertical-align:top}th{background:#e8f2ec}pre{background:#f2f5f2;padding:22px;overflow:auto;border-radius:8px}code{font-size:13px;background:#f1f4f2}nav{display:flex;justify-content:space-between;margin-top:45px}li{margin:10px 0}.tablewrap{overflow:auto}@media(max-width:700px){article{padding:28px 20px;margin:0;border-radius:0}h1{font-size:26px}table{font-size:12px}th,td{padding:8px}body{font-size:15px}}</style><header><a href="../START-HERE.html">COUNTER POS / DOCUMENTATION KIT</a> &nbsp; · &nbsp; <a href="../docs/01-product-requirements.md">Markdown source</a></header><article><h1>01 · Product requirements</h1>
+<blockquote>
+<p>中文重点：先完成小店的一天，而不是把所有 ERP 模块搬进来。</p>
+</blockquote>
+<h2>Intent and evidence</h2>
+<p>The user requested a standalone PWA POS portfolio project on GitHub, intended for small businesses with a small catalogue and a good design. This kit is a proposed response to that brief. Odoo documentation is a workflow reference, not evidence that its source code or offline protocol was audited. Its browser-based POS positioning and daily operational workflow inform the broad product categories only. [S01]</p>
+<h2>Personas and jobs</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+  <th>Persona</th>
+  <th>Job</th>
+  <th>Design consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Cashier</td>
+  <td>Sell a few items quickly and recover from mistakes</td>
+  <td>Large product targets; persistent total; minimal checkout fields</td>
+</tr>
+<tr>
+  <td>Owner / manager</td>
+  <td>Maintain stock, verify sales and close a shift</td>
+  <td>Separate back office; accountable adjustments; transparent sync exceptions</td>
+</tr>
+<tr>
+  <td>Portfolio reviewer</td>
+  <td>Understand the system in minutes</td>
+  <td>One-click synthetic demo, visible architecture and reproducible tests</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Scope baseline</h2>
+<p>Single business per deployment; one store and stock location; one active selling device and one writable POS tab. Multiple owner/cashier users may exist, but there is one open cash shift at a time. Stock is tracked in whole units only. The initial dataset contains 12 synthetic convenience-store products; benchmark fixtures expand to 500 products. This is a planning boundary, not a tested maximum.</p>
+<p>One currency is selected at setup (SGD in examples; MYR is another proposed configuration). Freeze currency after the first posted transaction. Tax is off in sample data. A configurable exclusive tax calculation may be enabled only after the owner verifies applicable treatment; statutory fiscalization and e-invoicing are outside V1.</p>
+<h2>Functional requirements</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+  <th>ID</th>
+  <th>Requirement</th>
+  <th>Release</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>FR-01</td>
+  <td>Online sign-in, roles, registered terminal, open cash shift</td>
+  <td>V1</td>
+</tr>
+<tr>
+  <td>FR-02</td>
+  <td>Create/edit/archive products, unique SKU/barcode, categories, price history</td>
+  <td>V1</td>
+</tr>
+<tr>
+  <td>FR-03</td>
+  <td>Receive stock and post reasoned adjustments to an immutable ledger</td>
+  <td>V1</td>
+</tr>
+<tr>
+  <td>FR-04</td>
+  <td>Product search, category chips, keyboard-wedge barcode input</td>
+  <td>V1</td>
+</tr>
+<tr>
+  <td>FR-05</td>
+  <td>Cart quantity, remove/undo, locally held carts, line discount with permission</td>
+  <td>V1</td>
+</tr>
+<tr>
+  <td>FR-06</td>
+  <td>Cash tender/change; one manually recorded external method per online sale</td>
+  <td>V1</td>
+</tr>
+<tr>
+  <td>FR-07</td>
+  <td>Receipt, sale history and manager-authorized online partial/full refunds</td>
+  <td>V1</td>
+</tr>
+<tr>
+  <td>FR-08</td>
+  <td>Local atomic sale persistence, durable outbox, idempotent posting and visible recovery</td>
+  <td>V1</td>
+</tr>
+<tr>
+  <td>FR-09</td>
+  <td>Daily gross/net sales, refunds, orders, average ticket, low stock</td>
+  <td>V1</td>
+</tr>
+<tr>
+  <td>FR-10</td>
+  <td>Shift cash count, variance reason, final close only after reconciliation</td>
+  <td>V1</td>
+</tr>
+<tr>
+  <td>FR-11</td>
+  <td>Installable shell, user-controlled updates, responsive accessible interaction</td>
+  <td>V1</td>
+</tr>
+<tr>
+  <td>FR-12</td>
+  <td>Backup/restore runbook, audit trail, CSV export and isolated demo</td>
+  <td>V1</td>
+</tr>
+<tr>
+  <td>FR-13</td>
+  <td>ERP adapter contracts without dependence on an ERP</td>
+  <td>Later</td>
+</tr>
+</tbody>
+</table></div>
+<p>Do not implement split tender, customer debt, loyalty, restaurant tables, kitchen printing, weighed products, product variants, multi-store inventory, purchase orders, accounting, ecommerce, automatic card processing, PayNow verification or AI agents inside checkout in V1. Keep their extension points without showing dead buttons in production.</p>
+<h2>User journeys</h2>
+<p><strong>Owner setup:</strong> create store → select currency/timezone → verify tax-off default → create categories/products → receive opening stock → create cashier → enroll device.</p>
+<p><strong>Cashier day:</strong> sign in online → verify catalogue/device → open shift with float → search/scan/tap → review cart → enter tender → confirm physical cash → durable save → show receipt → continue selling → count cash → synchronize → close.</p>
+<p><strong>Failure recovery:</strong> sell cash offline under valid permit → show local receipt and pending badge → reconnect/re-authenticate as necessary → resend identical document → obtain canonical receipt → reconcile local pending adjustments → resolve exceptions without deleting evidence.</p>
+<h2>Success criteria: targets, not measurements</h2>
+<p>The eventual implementation should let a new tester complete a three-product cash sale without training, recover an acknowledged local transaction after a normal reload, and retry a server-committed sale without duplication. Proposed performance budgets: local add-to-cart p95 below 100 ms for 500 cached products; search response below 150 ms; warm shell usable within 2 seconds on the declared test device. Measure with browser/version/hardware, dataset, network profile and run count in the report; do not publish an unsupported badge.</p>
+<h2>Definition of ready for development</h2>
+<p>Record the target environment and repository, accepted scope exceptions, dependency lockfile policy, screenshot sizes, risk owner, payment boundary and release gates. The temporary project name and styling can change independently of domain behavior.</p>
+<nav><a href="00-zh-CN-overview.html">← Previous</a><a href="02-business-rules.html">Next →</a></nav></article></html>

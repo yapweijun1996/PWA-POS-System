@@ -1,0 +1,450 @@
+{
+  "checks": [
+    {
+      "check": "Prototype JavaScript syntax",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "OpenAPI local references resolve",
+      "status": "PASS",
+      "detail": "246 references; 25 paths; 27 operations; not a full OpenAPI conformance certification"
+    },
+    {
+      "check": "Component schemas structurally valid JSON Schema",
+      "status": "PASS",
+      "detail": "35 component schemas"
+    },
+    {
+      "check": "Sale fixture conforms to command schema",
+      "status": "PASS",
+      "detail": "[]"
+    },
+    {
+      "check": "Canonical money fixture reconciles",
+      "status": "PASS",
+      "detail": "Due 1400; cash 2000; change 600 minor units"
+    },
+    {
+      "check": "Catalogue fixture counts and stock",
+      "status": "PASS",
+      "detail": "12 products; 198 opening units; all synthetic"
+    },
+    {
+      "check": "Application tests honestly marked NOT RUN",
+      "status": "PASS",
+      "detail": "32 planned acceptance scenarios, not executed application tests"
+    },
+    {
+      "check": "PNG files decode",
+      "status": "PASS",
+      "detail": "30 PNG files"
+    },
+    {
+      "check": "SVG files parse",
+      "status": "PASS",
+      "detail": "12 editable SVG files"
+    },
+    {
+      "check": "PDF pages present and text within page bounds",
+      "status": "PASS",
+      "detail": "{'PWA-POS-Handbook.pdf': 40, 'UI-Design-Atlas.pdf': 28}; 0 out-of-page text blocks; no empty text pages"
+    },
+    {
+      "check": "No distributed font binaries",
+      "status": "PASS",
+      "detail": "PDF font embedding is not a standalone font-file distribution"
+    },
+    {
+      "check": "Local HTML links and assets resolve",
+      "status": "PASS",
+      "detail": "163 local references; validation report generated below; bad=[]"
+    },
+    {
+      "check": "Prototype root layout across target viewports",
+      "status": "PASS",
+      "detail": "10 layout cases across 5 viewport sizes; internal tables/lists may scroll"
+    },
+    {
+      "check": "Prototype browser smoke assertions",
+      "status": "PASS",
+      "detail": "13/13 in-memory UI assertions; Chromium 144.0.7559.96"
+    },
+    {
+      "check": "No JavaScript page errors during smoke",
+      "status": "PASS",
+      "detail": "[]"
+    },
+    {
+      "check": "All 16 interface screenshots generated without page errors",
+      "status": "PASS",
+      "detail": "2x PNG output from exact shipped HTML/CSS/JS, injected locally for rendering"
+    }
+  ],
+  "prototype_smokes": [
+    {
+      "check": "Initial product cards and canonical total",
+      "pass": true
+    },
+    {
+      "check": "SKU search",
+      "pass": true
+    },
+    {
+      "check": "Category filter",
+      "pass": true
+    },
+    {
+      "check": "Add product and recalculate",
+      "pass": true
+    },
+    {
+      "check": "Decrease quantity",
+      "pass": true
+    },
+    {
+      "check": "Underpayment blocks confirm",
+      "pass": true
+    },
+    {
+      "check": "Invalid amount blocks confirm",
+      "pass": true
+    },
+    {
+      "check": "Cash change calculated",
+      "pass": true
+    },
+    {
+      "check": "Simulated receipt appears",
+      "pass": true
+    },
+    {
+      "check": "New order clears in-memory cart",
+      "pass": true
+    },
+    {
+      "check": "Mobile cart opens",
+      "pass": true
+    },
+    {
+      "check": "Mobile cart closes",
+      "pass": true
+    },
+    {
+      "check": "Offline simulation disables external methods",
+      "pass": true
+    }
+  ],
+  "viewport_checks": [
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "screen": "pos",
+      "page_overflow": false
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "screen": "inventory",
+      "page_overflow": false
+    },
+    {
+      "viewport": [
+        430,
+        932
+      ],
+      "screen": "pos",
+      "page_overflow": false
+    },
+    {
+      "viewport": [
+        430,
+        932
+      ],
+      "screen": "inventory",
+      "page_overflow": false
+    },
+    {
+      "viewport": [
+        768,
+        1024
+      ],
+      "screen": "pos",
+      "page_overflow": false
+    },
+    {
+      "viewport": [
+        768,
+        1024
+      ],
+      "screen": "inventory",
+      "page_overflow": false
+    },
+    {
+      "viewport": [
+        1024,
+        768
+      ],
+      "screen": "pos",
+      "page_overflow": false
+    },
+    {
+      "viewport": [
+        1024,
+        768
+      ],
+      "screen": "inventory",
+      "page_overflow": false
+    },
+    {
+      "viewport": [
+        1440,
+        900
+      ],
+      "screen": "pos",
+      "page_overflow": false
+    },
+    {
+      "viewport": [
+        1440,
+        900
+      ],
+      "screen": "inventory",
+      "page_overflow": false
+    }
+  ],
+  "pdf_pages": {
+    "PWA-POS-Handbook.pdf": 40,
+    "UI-Design-Atlas.pdf": 28
+  },
+  "screenshot_checks": [
+    {
+      "name": "01-pos-desktop",
+      "screen": "pos",
+      "viewport": [
+        1440,
+        900
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "02-pos-tablet",
+      "screen": "pos",
+      "viewport": [
+        1024,
+        768
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 1024,
+        "scrollWidth": 1024,
+        "height": 768
+      }
+    },
+    {
+      "name": "03-pos-mobile",
+      "screen": "pos",
+      "viewport": [
+        390,
+        844
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 844
+      }
+    },
+    {
+      "name": "04-order-mobile",
+      "screen": "cart",
+      "viewport": [
+        390,
+        844
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 844
+      }
+    },
+    {
+      "name": "05-payment-desktop",
+      "screen": "payment",
+      "viewport": [
+        1440,
+        900
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "06-payment-mobile",
+      "screen": "payment",
+      "viewport": [
+        390,
+        844
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 844
+      }
+    },
+    {
+      "name": "07-receipt-desktop",
+      "screen": "receipt",
+      "viewport": [
+        1440,
+        900
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "08-products-desktop",
+      "screen": "products",
+      "viewport": [
+        1440,
+        900
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "09-inventory-desktop",
+      "screen": "inventory",
+      "viewport": [
+        1440,
+        900
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "10-sales-desktop",
+      "screen": "sales",
+      "viewport": [
+        1440,
+        900
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "11-overview-desktop",
+      "screen": "dashboard",
+      "viewport": [
+        1440,
+        900
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "12-sync-desktop",
+      "screen": "sync",
+      "viewport": [
+        1440,
+        900
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "13-shift-desktop",
+      "screen": "shift",
+      "viewport": [
+        1440,
+        900
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "14-settings-desktop",
+      "screen": "settings",
+      "viewport": [
+        1440,
+        900
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "15-login-desktop",
+      "screen": "login",
+      "viewport": [
+        1440,
+        900
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "16-offline-mobile",
+      "screen": "pos",
+      "viewport": [
+        430,
+        932
+      ],
+      "page_errors": [],
+      "geometry": {
+        "width": 430,
+        "scrollWidth": 430,
+        "height": 932
+      }
+    }
+  ]
+}

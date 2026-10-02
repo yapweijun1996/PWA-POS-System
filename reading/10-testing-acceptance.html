@@ -1,0 +1,131 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>10 · Test strategy and acceptance gates</title><style>body{font:16px/1.85 system-ui,-apple-system,"Noto Sans CJK SC",sans-serif;color:#17333b;background:#f3f6f5;margin:0}header{padding:20px max(22px,calc((100vw - 960px)/2));border-bottom:1px solid #d5e2db;background:white;font-size:13px}header a{color:#0b6e61;text-decoration:none}article{max-width:960px;padding:42px 42px 70px;margin:30px auto;background:white;border:1px solid #dbe6df;border-radius:16px}h1{font-size:32px;line-height:1.25}h2{margin-top:36px;font-size:23px;color:#0b6e61}h3{margin-top:30px}a{color:#0b6e61}p{margin:14px 0}blockquote{background:#edf5ef;border-left:4px solid #0b6e61;margin:22px 0;padding:10px 20px}table{border-collapse:collapse;font-size:13px;line-height:1.6;width:100%;margin:25px 0}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #d8e3dd;vertical-align:top}th{background:#e8f2ec}pre{background:#f2f5f2;padding:22px;overflow:auto;border-radius:8px}code{font-size:13px;background:#f1f4f2}nav{display:flex;justify-content:space-between;margin-top:45px}li{margin:10px 0}.tablewrap{overflow:auto}@media(max-width:700px){article{padding:28px 20px;margin:0;border-radius:0}h1{font-size:26px}table{font-size:12px}th,td{padding:8px}body{font-size:15px}}</style><header><a href="../START-HERE.html">COUNTER POS / DOCUMENTATION KIT</a> &nbsp; · &nbsp; <a href="../docs/10-testing-acceptance.md">Markdown source</a></header><article><h1>10 · Test strategy and acceptance gates</h1>
+<blockquote>
+<p>中文重点：测试计划不是测试结果。本次交付的实际检查写在 validation/REPORT.md。</p>
+</blockquote>
+<h2>Layers</h2>
+<p>Unit tests cover integer money, discount bounds, exclusive tax rounding, return allocation and status transitions. Integration tests run against disposable PostgreSQL and verify transactional invariants, store scoping, idempotency, locks and migration behavior. Browser E2E tests cover complete user journeys, IndexedDB transactions, offline/reconnect and responsive behavior. Physical devices/printers get a separate manual matrix.</p>
+<p>Use deterministic fixtures and explicit fault injection; do not rely only on randomly toggling Wi-Fi. Add a test endpoint/proxy in test environments to drop the response after database commit, abort local writes, return 401/409/429/5xx and interrupt update activation. Such controls must never be enabled in a public production build.</p>
+<h2>Critical acceptance scenarios</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+  <th>ID</th>
+  <th>Scenario</th>
+  <th>Required result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>T01</td>
+  <td>Normal cash sale: 14.00 due, 20.00 tender</td>
+  <td>One sale/payment; 6.00 change; exact stock deduction</td>
+</tr>
+<tr>
+  <td>T02</td>
+  <td>Double-click confirm</td>
+  <td>One local document and one canonical sale</td>
+</tr>
+<tr>
+  <td>T03</td>
+  <td>Server commit succeeds, response is lost</td>
+  <td>Same UUID retry returns original; no second movement</td>
+</tr>
+<tr>
+  <td>T04</td>
+  <td>Same UUID with changed total</td>
+  <td>409; original preserved; visible review state</td>
+</tr>
+<tr>
+  <td>T05</td>
+  <td>Cash sale while offline then reload</td>
+  <td>Locally committed sale/outbox/receipt survive normal reload</td>
+</tr>
+<tr>
+  <td>T06</td>
+  <td>Storage quota/transaction abort</td>
+  <td>No success screen, no partial rows, cart preserved</td>
+</tr>
+<tr>
+  <td>T07</td>
+  <td>Price changes while cart is open</td>
+  <td>Review before payment; completed permitted snapshot preserved</td>
+</tr>
+<tr>
+  <td>T08</td>
+  <td>Offline replay exceeds current stock</td>
+  <td>Sale recorded with negative-stock exception; no disappearance</td>
+</tr>
+<tr>
+  <td>T09</td>
+  <td>Two concurrent refunds of final unit</td>
+  <td>At most one succeeds; no over-refund/restock</td>
+</tr>
+<tr>
+  <td>T10</td>
+  <td>Partial return rounding, then remaining return</td>
+  <td>Cumulative refund equals original, never exceeds it</td>
+</tr>
+<tr>
+  <td>T11</td>
+  <td>Product edit/archive after sale</td>
+  <td>Historical receipt unchanged</td>
+</tr>
+<tr>
+  <td>T12</td>
+  <td>Cross-store IDs / cashier calls manager endpoint</td>
+  <td>Rejected; no leaked cost or record existence</td>
+</tr>
+<tr>
+  <td>T13</td>
+  <td>Shift close with pending/review sales</td>
+  <td>Close blocked; cash-count draft remains</td>
+</tr>
+<tr>
+  <td>T14</td>
+  <td>Update available during checkout/pending outbox</td>
+  <td>No forced refresh; safe update deferred</td>
+</tr>
+<tr>
+  <td>T15</td>
+  <td>Second writable tab / expired lease</td>
+  <td>Single writer; recovery uses same IDs</td>
+</tr>
+<tr>
+  <td>T16</td>
+  <td>Card/PayNow selected offline</td>
+  <td>Disabled with reason; no “verified” status</td>
+</tr>
+<tr>
+  <td>T17</td>
+  <td>No Background Sync API</td>
+  <td>Foreground/manual path fully functional</td>
+</tr>
+<tr>
+  <td>T18</td>
+  <td>Browser storage cleared / first launch offline</td>
+  <td>Honest unavailable state; no fabricated catalogue/sales</td>
+</tr>
+<tr>
+  <td>T19</td>
+  <td>Backup restored to isolated environment</td>
+  <td>Ledger/payment/receipt reconciliation passes</td>
+</tr>
+<tr>
+  <td>T20</td>
+  <td>Print fails or user reprints</td>
+  <td>Sale retained; no duplicate sale</td>
+</tr>
+</tbody>
+</table></div>
+<p>The detailed CSV expands these scenarios with preconditions, steps, expected evidence and release stage. Traceability links requirements to tests and screens.</p>
+<h2>Responsive and accessibility matrix</h2>
+<p>Test 390×844, 430×932, 768×1024, 1024×768 and 1440×900; keyboard-only; 200% zoom; touch; long names; reduced motion; screen-reader landmarks/focus; empty/loading/error states. Automated accessibility tools do not replace manual payment-dialog and receipt reading checks. A WCAG 2.2 AA goal is not a compliance certificate. [S07]</p>
+<h2>Browser and hardware matrix</h2>
+<p>Desktop Chromium, Firefox and Safari; iOS Safari and installed home-screen mode; Android Chromium. Record exact versions and OS at execution. Service-worker/IndexedDB tests require HTTPS or trusted localhost. Safari/WebKit emulation does not prove actual iPhone standalone safe areas, OS suspension, installation or printer behavior. Mark those tests NOT RUN until verified on real devices.</p>
+<p>Barcode baseline is a keyboard-wedge USB/Bluetooth scanner; test focus and scan suffix configuration. Camera scanner, silent ESC/POS printing, cash drawer and physical terminal integrations are outside the release claim.</p>
+<h2>Release gates</h2>
+<p>G0: scope/ADRs and current dependency versions documented. G1: catalogue/stock domain tests pass. G2: online cash flow plus immutable history and refund invariants pass. G3: offline atomicity/idempotent recovery/update tests pass. G4: responsive/accessibility/security/backup rehearsal pass. G5: reviewer demonstration and README evidence are reproducible from a clean clone.</p>
+<p>Block pilot release for duplicate transactions, lost locally acknowledged data in tested normal-reload scenarios, unauthorized refunds, incorrect cash totals, cross-store access, stale-price silent repricing, or unreviewed destructive migrations. Lower-priority cosmetic issues may ship only with explicit notes.</p>
+<h2>Evidence format</h2>
+<p>Each test record contains test_id, git SHA, build ID, environment, browser/device, fixtures, expected/actual outcome, screenshot/log/report path and PASS/FAIL/NOT RUN. Never convert “planned” to “passed” because a document or screenshot exists. Performance reports state sample count and p95 calculation, not only a single fast run.</p>
+<nav><a href="09-security-privacy.html">← Previous</a><a href="11-implementation-roadmap.html">Next →</a></nav></article></html>

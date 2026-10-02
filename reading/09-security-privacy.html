@@ -1,0 +1,67 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>09 · Security, privacy and recovery</title><style>body{font:16px/1.85 system-ui,-apple-system,"Noto Sans CJK SC",sans-serif;color:#17333b;background:#f3f6f5;margin:0}header{padding:20px max(22px,calc((100vw - 960px)/2));border-bottom:1px solid #d5e2db;background:white;font-size:13px}header a{color:#0b6e61;text-decoration:none}article{max-width:960px;padding:42px 42px 70px;margin:30px auto;background:white;border:1px solid #dbe6df;border-radius:16px}h1{font-size:32px;line-height:1.25}h2{margin-top:36px;font-size:23px;color:#0b6e61}h3{margin-top:30px}a{color:#0b6e61}p{margin:14px 0}blockquote{background:#edf5ef;border-left:4px solid #0b6e61;margin:22px 0;padding:10px 20px}table{border-collapse:collapse;font-size:13px;line-height:1.6;width:100%;margin:25px 0}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #d8e3dd;vertical-align:top}th{background:#e8f2ec}pre{background:#f2f5f2;padding:22px;overflow:auto;border-radius:8px}code{font-size:13px;background:#f1f4f2}nav{display:flex;justify-content:space-between;margin-top:45px}li{margin:10px 0}.tablewrap{overflow:auto}@media(max-width:700px){article{padding:28px 20px;margin:0;border-radius:0}h1{font-size:26px}table{font-size:12px}th,td{padding:8px}body{font-size:15px}}</style><header><a href="../START-HERE.html">COUNTER POS / DOCUMENTATION KIT</a> &nbsp; · &nbsp; <a href="../docs/09-security-privacy.md">Markdown source</a></header><article><h1>09 · Security, privacy and recovery</h1>
+<blockquote>
+<p>中文重点：这不是合规认证。先确保权限、历史数据和本机待同步销售不会被误处理。</p>
+</blockquote>
+<h2>Threat model</h2>
+<p>Assets: transaction history, stock ledger, cashier identity, local pending sales, database backups and server credentials. Threats: stolen/shared terminal, malicious browser input, XSS, CSRF, replay/duplicate commands, cross-store object access, client price tampering, server outage, local storage loss and accidental destructive maintenance.</p>
+<p>V1 has one store per deployment, but identifiers remain store-scoped. A public portfolio demo is a separate security domain with synthetic data and no access to real shop/ERP credentials. Do not infer consent to copy Globe3 customer data into GitHub.</p>
+<h2>Authorization matrix</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+  <th>Capability</th>
+  <th>Cashier</th>
+  <th>Manager</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Browse selling catalogue / perform own-shift sales</td>
+  <td>Yes</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>View product cost / receive or adjust stock</td>
+  <td>No</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Override discount beyond cashier permit</td>
+  <td>No</td>
+  <td>Online approval only</td>
+</tr>
+<tr>
+  <td>Refund / export recovery / backup restore</td>
+  <td>No</td>
+  <td>Yes, online</td>
+</tr>
+<tr>
+  <td>Close own reconciled shift</td>
+  <td>Yes, within policy</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Change currency/tax/device policy</td>
+  <td>No</td>
+  <td>Yes, with audit</td>
+</tr>
+</tbody>
+</table></div>
+<p>Server checks role and scope on every operation, including direct API calls. Hiding a button is not authorization. Protect cost fields by response projection, not only CSS.</p>
+<h2>Session and device controls</h2>
+<p>Use HttpOnly secure cookies, rotate session identifiers on sign-in/privilege change, enforce inactivity/absolute lifetimes and revoke server sessions on logout. Protect mutation requests from CSRF and authenticate WebSocket/event channels if later introduced. [S09]</p>
+<p>Passwords are stored with an established adaptive password hashing library; rate-limit login and require manager recovery procedures. Avoid shared universal PINs. Device enrollment and offline permissions are named and revocable. A local lock screen is a convenience boundary on a trusted device, not equivalent to OS-level encryption or remote revocation.</p>
+<h2>Browser data</h2>
+<p>Cache the app shell separately from authorized business data. Do not cache authentication responses in the service worker. Offline catalogue excludes costs/customer PII by default. Clear eligible cached data on explicit logout only after unresolved sales are synchronized or securely exported; otherwise lock access and require manager intervention rather than deleting evidence.</p>
+<p>Use a restrictive CSP, escape imported text, validate image uploads and avoid remote script CDNs. Client-side encryption with a key stored alongside data does not solve a compromised-browser threat; document key management before claiming encrypted offline storage. Browser persistence is not a backup. [S04]</p>
+<h2>Payment boundary</h2>
+<p>V1 records cash and external payment acknowledgements; it does not handle cardholder account data. Do not build a card-number form or imply PCI compliance. A bank/payment-gateway integration requires a separate provider contract, webhook signature checks, event deduplication, settlement reconciliation and a revised threat model. The UI prototype never transfers money.</p>
+<h2>Audit and observability</h2>
+<p>Append actor/device/time/action/subject/reason/request ID for stock, product pricing, discount exceptions, refunds, shift close and security changes. Redact cookies, passwords, permits and payment references from logs where unnecessary. Log an offline exception's UUID and reason without logging its entire payload publicly.</p>
+<p>Alert on unresolved outbox items, repeated idempotency conflicts, negative balances, backup failures, long-open shifts and high authentication failure rates. These are proposed operational alerts, not automations created by this delivery.</p>
+<h2>Backup and restore</h2>
+<p>Back up PostgreSQL with an established logical or physical backup process, encrypt at rest/in transit, separate credentials and store a copy off the application host. Include uploaded product media and migration/build metadata. Database backups do not contain transactions still present only on a disconnected browser.</p>
+<p>Suggested project targets: daily backup and a verified restore rehearsal before any pilot. An RPO/RTO target is not achieved until measured. Restore into a separate database/environment, run schema and financial/stock reconciliation checks, verify identities and only then schedule a controlled cutover. Never overwrite a live database as a troubleshooting shortcut.</p>
+<h2>Public release guardrails</h2>
+<p>No real people, live receipts, credentials, IP addresses or internal infrastructure details in the public repo or screenshots. Secret-scan commits and built frontend assets. Choose a project license after review; this kit deliberately makes no MIT-license assertion for the eventual app. The exploratory image's generated license badge is not authoritative.</p>
+<nav><a href="08-api-contract.html">← Previous</a><a href="10-testing-acceptance.html">Next →</a></nav></article></html>

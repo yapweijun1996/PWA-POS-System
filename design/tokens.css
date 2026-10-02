@@ -1,0 +1,19 @@
+:root {
+  --color-ink: #152D35;
+  --color-muted: #536A73;
+  --color-canvas: #F3F6F5;
+  --color-surface: #FFFFFF;
+  --color-border: #D8E2DF;
+  --color-primary: #0B6E61;
+  --color-primaryDark: #07564C;
+  --color-primaryTint: #E1F1EC;
+  --color-warningText: #8A5700;
+  --color-warningSurface: #FFF2D6;
+  --color-dangerText: #B42318;
+  --color-dangerSurface: #FDEAE7;
+  --space-unit: 4px;
+  --touch-target: 44px;
+  --primary-height: 52px;
+  --radius-card: 14px;
+  --font-body: 16px;
+}
