@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "build/server",
+    "rootDir": ".",
+    "rewriteRelativeImportExtensions": true,
+    "types": ["node"],
+    "lib": ["ES2023", "DOM"]
+  },
+  "include": [
+    "apps/api",
+    "packages",
+    "scripts/operations",
+    "scripts/migrate.ts",
+    "scripts/setup.ts"
+  ]
+}

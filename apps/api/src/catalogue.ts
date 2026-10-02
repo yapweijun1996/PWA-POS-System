@@ -5,7 +5,7 @@ import { productWrite } from "../../../packages/contracts/index.ts";
 import { transaction, requireThat, numbers } from "./db.ts";
 import { manager, audit, movement, digest, type Context } from "./context.ts";
 export async function catalogue(
-  pool: pg.Pool,
+  pool: pg.Pool | pg.PoolClient,
   ctx: Context,
   includeArchived = false,
   limit = 100,
@@ -147,6 +147,9 @@ export async function stockWrite(
       requireThat(prior.command_sha256 === hash, "IDEMPOTENCY_CONFLICT", 409);
       return { replayed: true };
     }
+    await db.query("SELECT id FROM stores WHERE id=$1 FOR UPDATE", [
+      ctx.actor.store_id,
+    ]);
     const b = (
       await db.query(
         "SELECT * FROM stock_balances WHERE store_id=$1 AND product_id=$2 FOR UPDATE",

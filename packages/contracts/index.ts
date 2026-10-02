@@ -137,6 +137,7 @@ export type Permit = {
   signature: string;
 };
 export type Bootstrap = {
+  demo: boolean;
   store: {
     id: string;
     name: string;

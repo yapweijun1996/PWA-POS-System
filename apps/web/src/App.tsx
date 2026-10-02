@@ -21,15 +21,19 @@ import {
   selfTest,
   commitSale,
   localQuantities,
+  unresolved,
+  assertWriter,
+  saveCart,
   type CartLine,
   type Outbox,
 } from "./db.ts";
 import { synchronize, pullCatalogue } from "./sync.ts";
 import { registerWorker, activateWorker } from "./pwa.ts";
 import { BackOffice } from "./BackOffice.tsx";
+import { savedCommands } from "./commands.ts";
+import { offlineAllowed, type TrustedAnchor } from "./offline.ts";
 import { Dialog, Field, ProductArt, Empty } from "./components.tsx";
-let trustedAnchor: { server: number; monotonic: number; wall: number } | null =
-  null;
+let trustedAnchor: TrustedAnchor | null = null;
 const navigation = [
   "Sell",
   "Products",
@@ -52,6 +56,8 @@ export function App() {
     [permit, setPermit] = useState<Permit | null>(null),
     [cart, setCart] = useState<CartLine[]>([]),
     [outbox, setOutbox] = useState<Outbox[]>([]),
+    [commandCount, setCommandCount] = useState(0),
+    [administrativeBusy, setAdministrativeBusy] = useState(false),
     [screen, setScreen] = useState("Sell"),
     [search, setSearch] = useState(""),
     [category, setCategory] = useState("All items"),
@@ -89,11 +95,11 @@ export function App() {
         })),
       )
     : { total_minor: 0, gross_minor: 0, discount_minor: 0, tax_minor: 0 };
-  const pending = outbox.filter((o) => o.state !== "ACKED").length;
+  const pending = outbox.filter(unresolved).length;
   const manager = boot?.user.role === "MANAGER";
   const ownShift = shift?.opened_by === boot?.user.id;
   async function refreshLocal() {
-    const [items, delta, docs, h] = await Promise.all([
+    const [items, delta, docs, h, commands] = await Promise.all([
       db.products.toArray(),
       localQuantities(),
       db.outbox
@@ -102,6 +108,7 @@ export function App() {
         .toArray()
         .catch(() => db.outbox.toArray()),
       db.held.toArray(),
+      savedCommands(),
     ]);
     setProducts(
       items
@@ -111,6 +118,7 @@ export function App() {
     );
     setOutbox(docs);
     setHeld(h);
+    setCommandCount(commands.length);
   }
   async function refresh() {
     await refreshLocal();
@@ -120,7 +128,44 @@ export function App() {
         const s = await api<Shift | null>("/shifts/current");
         setShift(s);
         await putMeta("shift", s);
+        const operator = await meta<Bootstrap>("bootstrap");
+        if (
+          s &&
+          operator?.user.id === s.opened_by &&
+          operator.devices.some(
+            (device) => device.id === s.device_id && !device.revoked_at,
+          )
+        ) {
+          const cachedPermit = await meta<Permit>("permit");
+          const revisions = (await db.products.toArray())
+            .filter((product) => product.active)
+            .map((product) => product.price_revision_id);
+          const liveTime = trustedAnchor
+            ? trustedAnchor.server + performance.now() - trustedAnchor.monotonic
+            : NaN;
+          if (
+            !cachedPermit ||
+            !cachedPermit.signed_claims.revisions ||
+            revisions.some(
+              (revision) =>
+                !cachedPermit.signed_claims.revisions.includes(revision),
+            ) ||
+            Date.parse(cachedPermit.expires_at) - liveTime < 15 * 60 * 1000
+          ) {
+            const fresh = await api<Permit>(
+              `/shifts/${s.id}/offline-permit`,
+              {},
+            );
+            await putMeta("permit", fresh);
+            setPermit(fresh);
+          }
+        } else {
+          setPermit(null);
+          await db.meta.delete("permit");
+        }
       } catch (e) {
+        if (e instanceof ApiError && e.status === 401)
+          await invalidateAuthentication();
         setError((e as Error).message);
       }
     } else setOnline(false);
@@ -130,6 +175,9 @@ export function App() {
     setCsrf(b.csrf_token);
     authorized.current = true;
     setBoot(b);
+    setDemo(b.demo === true);
+    setScreen("Sell");
+    setModal(null);
     await putMeta("bootstrap", { ...b, csrf_token: "" });
     trustedAnchor = {
       server: Date.parse(b.server_time),
@@ -146,10 +194,29 @@ export function App() {
       const p = await api<Permit>(`/shifts/${s.id}/offline-permit`, {});
       setPermit(p);
       await putMeta("permit", p);
+    } else {
+      setPermit(null);
+      await db.meta.delete("permit");
     }
     await refreshLocal();
     await synchronize(true);
     await refresh();
+  }
+  async function invalidateAuthentication() {
+    authorized.current = false;
+    trustedAnchor = null;
+    setBoot(null);
+    setPermit(null);
+    setModal(null);
+    setScreen("Sell");
+    setCsrf("");
+    await db.transaction("rw", [db.meta, db.outbox], async () => {
+      await db.meta.bulkDelete(["bootstrap", "permit"]);
+      await db.outbox
+        .filter((o) => unresolved(o) && o.state !== "NEEDS_REVIEW")
+        .modify({ state: "AUTH_REQUIRED", last_error: "AUTH_REQUIRED" });
+    });
+    await refreshLocal();
   }
   useEffect(() => {
     let stopped = false;
@@ -169,8 +236,13 @@ export function App() {
         if (connected) {
           try {
             await authorize();
-          } catch {
-            setBoot(null);
+          } catch (e) {
+            if (e instanceof ApiError && e.status === 401)
+              await invalidateAuthentication();
+            else {
+              setBoot(null);
+              setError((e as Error).message);
+            }
             await refreshLocal();
           }
         } else {
@@ -198,7 +270,11 @@ export function App() {
       void lease()
         .then((owner) => {
           setWriter(owner);
-          if (owner && !leaseOwned.current) void sync();
+          if (owner && !leaseOwned.current) {
+            void meta<CartLine[]>("cart").then((lines) => setCart(lines ?? []));
+            void refreshLocal();
+            void sync();
+          }
           leaseOwned.current = owner;
         })
         .catch(() => setWriter(false));
@@ -210,6 +286,15 @@ export function App() {
         try {
           const b = await api<Bootstrap>("/bootstrap");
           setCsrf(b.csrf_token);
+          setBoot(b);
+          setDemo(b.demo === true);
+          await putMeta("bootstrap", { ...b, csrf_token: "" });
+          if (b.user.role === "CASHIER")
+            setScreen((current) =>
+              ["Products", "Inventory", "Overview"].includes(current)
+                ? "Sell"
+                : current,
+            );
           trustedAnchor = {
             server: Date.parse(b.server_time),
             wall: Date.now(),
@@ -219,12 +304,7 @@ export function App() {
           await refresh();
         } catch (e) {
           if (e instanceof ApiError && e.status === 401) {
-            authorized.current = false;
-            await db.outbox
-              .filter((o) => o.state !== "ACKED" && o.state !== "NEEDS_REVIEW")
-              .modify({ state: "AUTH_REQUIRED" });
-            await refreshLocal();
-            setBoot(null);
+            await invalidateAuthentication();
           }
           setError((e as Error).message);
         }
@@ -290,7 +370,7 @@ export function App() {
             tax_bps: l.product.tax_bps,
           })),
         );
-      await putMeta("cart", next);
+      await saveCart(next);
       setCart(next);
     } catch (e) {
       setError("Order could not be saved: " + (e as Error).message);
@@ -354,7 +434,7 @@ export function App() {
           return l;
         });
         if (changed) {
-          await putMeta("cart", reviewed);
+          await saveCart(reviewed);
           setCart(reviewed);
           await refreshLocal();
           throw new Error(
@@ -362,7 +442,11 @@ export function App() {
           );
         }
       }
-      const available = products;
+      const delta = await localQuantities();
+      const available = (await db.products.toArray()).map((p) => ({
+        ...p,
+        quantity: p.quantity + (delta.get(p.id) ?? 0),
+      }));
       for (const l of cart) {
         const p = available.find((p) => p.id === l.product.id);
         const requested = cart
@@ -391,14 +475,15 @@ export function App() {
     }
   }
   function offlineReady() {
-    if (!trustedAnchor || !permit || !shift) return false;
-    const elapsed = performance.now() - trustedAnchor.monotonic,
-      wall = Date.now() - trustedAnchor.wall;
-    if (Math.abs(wall - elapsed) > 5000) return false;
-    return (
-      trustedAnchor.server + elapsed < Date.parse(permit.expires_at) &&
-      shift.opened_by === boot?.user.id
-    );
+    return offlineAllowed({
+      anchor: trustedAnchor,
+      permit,
+      shift,
+      boot,
+      cart,
+      monotonic: performance.now(),
+      wall: Date.now(),
+    });
   }
   async function confirm(e: FormEvent) {
     e.preventDefault();
@@ -406,8 +491,38 @@ export function App() {
     confirmLock.current = true;
     setBusy(true);
     setError("");
+    let savedId: string | null = null;
     try {
       if (!shift || !boot) throw new Error("No open shift");
+      if (online) {
+        const current = await api<Bootstrap>("/bootstrap");
+        if (
+          current.user.id !== boot.user.id ||
+          current.user.role !== boot.user.role
+        )
+          throw new Error(
+            "Operator access changed. Sign in again before checkout.",
+          );
+        if (
+          !current.devices.some(
+            (device) => device.id === shift.device_id && !device.revoked_at,
+          )
+        )
+          throw new Error(
+            "This terminal has been revoked. Saved records are preserved for reconciliation.",
+          );
+        const liveShift = await api<Shift | null>("/shifts/current");
+        if (
+          !liveShift ||
+          liveShift.id !== shift.id ||
+          liveShift.state !== "OPEN" ||
+          liveShift.opened_by !== boot.user.id
+        )
+          throw new Error(
+            "The shift changed. Reconcile the saved records before checkout.",
+          );
+        setCsrf(current.csrf_token);
+      }
       if (!online && (!offlineReady() || method !== "CASH"))
         throw new Error("Offline cash authorization is unavailable");
       const cash = method === "CASH" ? parseMoney(tender) : amount.total_minor;
@@ -461,6 +576,7 @@ export function App() {
         ...amount,
       };
       await commitSale(payload, { actor_id: boot.user.id });
+      savedId = payload.client_sale_id;
       setCart([]);
       setReceipt(payload.client_sale_id);
       setModal("Receipt");
@@ -470,7 +586,13 @@ export function App() {
         await refresh();
       }
     } catch (e) {
-      setError("Sale not saved: " + (e as Error).message);
+      if (e instanceof ApiError && e.status === 401)
+        await invalidateAuthentication();
+      setError(
+        (savedId
+          ? "Sale saved on this device. Synchronization needs attention: "
+          : "Sale not saved: ") + (e as Error).message,
+      );
     } finally {
       setBusy(false);
       confirmLock.current = false;
@@ -481,8 +603,13 @@ export function App() {
     setBusy(true);
     try {
       const f = new FormData(e.currentTarget);
+      const device = boot!.devices.find((d) => !d.revoked_at);
+      if (!device)
+        throw new Error(
+          "Enroll an active terminal in Settings before opening a shift.",
+        );
       const s = await api<Shift>("/shifts", {
-        device_id: boot!.devices.find((d) => !d.revoked_at)!.id,
+        device_id: device.id,
         opening_float_minor: parseMoney(String(f.get("float"))),
       });
       setShift(s);
@@ -502,6 +629,7 @@ export function App() {
     if (!cart.length) return;
     try {
       await db.transaction("rw", [db.held, db.meta], async () => {
+        await assertWriter();
         await db.held.add({
           id: crypto.randomUUID(),
           lines: cart,
@@ -521,6 +649,7 @@ export function App() {
       if (!h) return;
       if (cart.length) throw new Error("Hold or clear the current order first");
       await db.transaction("rw", [db.held, db.meta], async () => {
+        await assertWriter();
         await putMeta("cart", h.lines);
         await db.held.delete(id);
       });
@@ -532,22 +661,27 @@ export function App() {
     }
   }
   async function logout() {
-    if (pending) {
+    if (busy || administrativeBusy) return;
+    if (cart.length) {
       setError(
-        "Synchronize or export unresolved sales before logging out. Records are preserved.",
+        "Hold or clear the current order before signing out. The draft is preserved.",
       );
       return;
     }
+    setBusy(true);
     try {
+      if (pending || (await savedCommands()).length) {
+        setError(
+          "Confirm unresolved sales and saved requests in Sync center before signing out. Records are preserved; encrypted recovery export is available if the server is unavailable.",
+        );
+        return;
+      }
       await api("/auth/logout", {});
-      setBoot(null);
-      authorized.current = false;
-      trustedAnchor = null;
-      await db.meta.delete("bootstrap");
-      await db.meta.delete("permit");
-      setPermit(null);
+      await invalidateAuthentication();
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setBusy(false);
     }
   }
   let tenderMinor = -1;
@@ -635,7 +769,7 @@ export function App() {
                 </button>
               </div>
               {manager && online && (
-                <Field label="Line discount (SGD)">
+                <Field label={"Line discount (" + boot?.store.currency + ")"}>
                   <input
                     aria-label={"Discount " + l.product.name}
                     key={l.line_id + "discount"}
@@ -694,7 +828,7 @@ export function App() {
           <span>{money(0)}</span>
         </div>
         <div className="grand">
-          <span>Total SGD</span>
+          <span>Total {boot?.store.currency}</span>
           <strong>{money(amount.total_minor)}</strong>
         </div>
         <button
@@ -823,10 +957,7 @@ export function App() {
             {navigation
               .filter(
                 (n) =>
-                  manager ||
-                  !["Products", "Inventory", "Overview", "Settings"].includes(
-                    n,
-                  ),
+                  manager || !["Products", "Inventory", "Overview"].includes(n),
               )
               .map((n, i) => (
                 <button
@@ -889,9 +1020,7 @@ export function App() {
                 .filter(
                   (n) =>
                     manager ||
-                    !["Products", "Inventory", "Overview", "Settings"].includes(
-                      n,
-                    ),
+                    !["Products", "Inventory", "Overview"].includes(n),
                 )
                 .map((n) => (
                   <option key={n}>{n}</option>
@@ -899,6 +1028,55 @@ export function App() {
             </select>
             <button onClick={() => void logout()}>Sign out</button>
           </nav>
+          {waiting && (
+            <div className="update-banner" role="status">
+              <div>
+                <strong>New version available</strong>
+                <p>
+                  {busy ||
+                  administrativeBusy ||
+                  pending ||
+                  commandCount ||
+                  modal === "Take payment" ||
+                  cart.length
+                    ? "Finish checkout and sync pending sales before updating."
+                    : "Ready to update."}
+                </p>
+              </div>
+              <button
+                disabled={
+                  busy ||
+                  administrativeBusy ||
+                  pending > 0 ||
+                  commandCount > 0 ||
+                  cart.length > 0 ||
+                  modal === "Take payment" ||
+                  updating
+                }
+                onClick={() => {
+                  setUpdating(true);
+                  void (async () => {
+                    if (
+                      (await savedCommands()).length ||
+                      (await db.outbox.filter(unresolved).count()) ||
+                      ((await meta<CartLine[]>("cart"))?.length ?? 0) > 0
+                    )
+                      throw new Error(
+                        "Finish checkout and confirm saved requests before updating. Records are preserved.",
+                      );
+                    await activateWorker(waiting);
+                  })()
+                    .then(() => location.reload())
+                    .catch((e) => {
+                      setUpdating(false);
+                      setError(e.message);
+                    });
+                }}
+              >
+                Update now
+              </button>
+            </div>
+          )}
           {error && (
             <div role="alert" className="error global-error">
               {error}
@@ -1055,6 +1233,7 @@ export function App() {
               </div>
             ) : (
               <BackOffice
+                key={boot.user.id + ":" + boot.user.role}
                 writer={writer}
                 screen={screen}
                 boot={boot}
@@ -1065,6 +1244,9 @@ export function App() {
                 error={setError}
                 outbox={outbox}
                 openShift={() => setModal("Open shift")}
+                reauthorize={authorize}
+                hasDraft={cart.length > 0}
+                activity={setAdministrativeBusy}
               />
             )}
           </main>
@@ -1098,38 +1280,6 @@ export function App() {
           )}
         </div>
       </div>
-      {waiting && (
-        <div className="update-banner" role="status">
-          <div>
-            <strong>New version available</strong>
-            <p>
-              {busy || pending || modal === "Take payment" || cart.length
-                ? "Finish checkout and sync pending sales before updating."
-                : "Ready to update."}
-            </p>
-          </div>
-          <button
-            disabled={
-              busy ||
-              pending > 0 ||
-              cart.length > 0 ||
-              modal === "Take payment" ||
-              updating
-            }
-            onClick={() => {
-              setUpdating(true);
-              void activateWorker(waiting)
-                .then(() => location.reload())
-                .catch((e) => {
-                  setUpdating(false);
-                  setError(e.message);
-                });
-            }}
-          >
-            Update now
-          </button>
-        </div>
-      )}
       {updating && (
         <div className="updating" role="status">
           <div className="spinner" />
@@ -1165,7 +1315,7 @@ export function App() {
           {modal === "Open shift" && (
             <form onSubmit={(e) => void openShift(e)}>
               <p>Counter 01 · {boot.user.display_name}</p>
-              <Field label="Opening cash float (SGD)">
+              <Field label={"Opening cash float (" + boot.store.currency + ")"}>
                 <input
                   name="float"
                   inputMode="decimal"
@@ -1180,7 +1330,7 @@ export function App() {
           )}
           {modal === "Take payment" && (
             <form onSubmit={(e) => void confirm(e)}>
-              <p className="eyebrow">AMOUNT DUE · SGD</p>
+              <p className="eyebrow">AMOUNT DUE · {boot.store.currency}</p>
               <div className="payment-due">{money(amount.total_minor)}</div>
               <div className="methods">
                 {(["CASH", "CARD_MANUAL", "PAYNOW_MANUAL"] as const).map(
@@ -1203,7 +1353,7 @@ export function App() {
               </div>
               {method === "CASH" ? (
                 <>
-                  <Field label="Cash received (SGD)">
+                  <Field label={`Cash received (${boot.store.currency})`}>
                     <input
                       aria-label="Cash received"
                       inputMode="decimal"
@@ -1280,12 +1430,12 @@ export function App() {
           )}
           {modal === "Receipt" && saved && (
             <>
-              <p
-                className={"badge " + (saved.state === "ACKED" ? "" : "amber")}
-              >
+              <p className={"badge " + (unresolved(saved) ? "amber" : "")}>
                 {saved.state === "ACKED"
                   ? "Synced"
-                  : "Saved on this device — waiting to sync"}
+                  : saved.state === "EXTERNALLY_RESOLVED"
+                    ? "Externally reconciled · Sale not posted"
+                    : "Saved on this device — waiting to sync"}
               </p>
               <div className="receipt">
                 <h3>{boot.store.name.toUpperCase()}</h3>
@@ -1305,7 +1455,7 @@ export function App() {
                   </div>
                 ))}
                 <div className="grand">
-                  <span>Total SGD</span>
+                  <span>Total {boot.store.currency}</span>
                   <strong>{money(saved.payload.total_minor)}</strong>
                 </div>
                 <div className="list-row">
@@ -1320,7 +1470,9 @@ export function App() {
                   <span>Change</span>
                   <span>{money(saved.payload.payment.change_minor)}</span>
                 </div>
-                <p className="footnote">SYNTHETIC · NOT A TAX INVOICE</p>
+                <p className="footnote">
+                  {demo ? "SYNTHETIC · NOT A TAX INVOICE" : "Tax not applied"}
+                </p>
                 <small className="uuid">Sale UUID: {saved.id}</small>
               </div>
               <div className="receipt-actions">

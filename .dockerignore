@@ -1,0 +1,33 @@
+# Only source needed to build the application and operator image is admitted.
+**
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.server.json
+!apps/
+!apps/**
+!packages/
+!packages/**
+!scripts/
+!scripts/operations/
+!scripts/operations/**
+!scripts/migrate.ts
+!scripts/setup.ts
+!infra/
+!infra/migrations/
+!infra/migrations/**
+!infra/Dockerfile
+!infra/healthcheck.mjs
+!infra/production/
+!infra/production/**
+!public/
+!public/**
+# Exclusions apply even to an admitted source directory.
+**/.env*
+**/node_modules/**
+**/*.pem
+**/*.key
+**/secrets/**
+**/.local/**
+**/test-results/**
+**/.DS_Store

@@ -4,6 +4,7 @@ import type {
   SaleCommand,
   Posted,
 } from "../../../packages/contracts/index.ts";
+import { z } from "zod";
 import { canonical } from "../../../packages/domain/money.ts";
 export type Outbox = {
   id: string;
@@ -15,14 +16,38 @@ export type Outbox = {
     | "ACKED"
     | "RETRY"
     | "AUTH_REQUIRED"
-    | "NEEDS_REVIEW";
+    | "NEEDS_REVIEW"
+    | "EXTERNALLY_RESOLVED";
   attempts: number;
   next_retry_at: number;
   last_error?: string;
   created_at: number;
   actor_id?: string;
   posted?: Posted;
+  resolution?: ExternalResolution;
 };
+export const externalResolution = z
+  .object({
+    client_sale_id: z.string().uuid(),
+    payload_sha256: z.string().regex(/^[a-f0-9]{64}$/),
+    resolution_id: z.string().uuid(),
+    resolved_at: z.string().datetime(),
+    reason: z.string().min(1).max(500),
+    external_reference: z.string().min(1).max(120),
+    canonical_sale_id: z.string().uuid().nullable(),
+    canonical_receipt_no: z.string().min(1).max(120).nullable(),
+  })
+  .strict()
+  .refine(
+    (value) =>
+      (value.canonical_sale_id === null) ===
+      (value.canonical_receipt_no === null),
+    "Canonical identity and receipt must agree",
+  );
+export type ExternalResolution = z.infer<typeof externalResolution>;
+export function unresolved(document: Outbox): boolean {
+  return document.state !== "ACKED" && document.state !== "EXTERNALLY_RESOLVED";
+}
 class LocalDatabase extends Dexie {
   products!: Table<Product, string>;
   sales!: Table<SaleCommand, string>;
@@ -71,6 +96,17 @@ export async function lease() {
     return true;
   });
 }
+export async function assertWriter() {
+  const current = await meta<{ owner: string; expires: number }>("writer");
+  if (!current || current.owner !== writerId || current.expires <= Date.now())
+    throw new Error("Another tab controls this terminal");
+}
+export async function saveCart(lines: CartLine[]) {
+  await db.transaction("rw", db.meta, async () => {
+    await assertWriter();
+    await putMeta("cart", lines);
+  });
+}
 export async function selfTest() {
   const key = "probe-" + writerId;
   await putMeta(key, key);
@@ -96,16 +132,19 @@ export async function commitSale(
     "rw",
     [db.sales, db.lines, db.payments, db.deltas, db.outbox, db.meta],
     async () => {
-      const l = await meta<{ owner: string; expires: number }>("writer");
-      if (!l || l.owner !== writerId || l.expires <= Date.now())
-        throw new Error("Another tab controls this terminal");
+      await assertWriter();
+      const prior = await db.outbox.get(payload.client_sale_id);
+      if (prior) {
+        if (prior.hash !== hash)
+          throw new Error("A saved sale identity has different content");
+        return;
+      }
       if (payload.was_offline) {
         const count = await db.sales
           .filter((s) => s.offline_permit_id === payload.offline_permit_id)
           .count();
         if (count >= 200) throw new Error("Offline permit sale limit reached");
       }
-      if (await db.sales.get(payload.client_sale_id)) return;
       await db.sales.add(payload);
       await db.lines.bulkAdd(
         payload.lines.map((l) => ({

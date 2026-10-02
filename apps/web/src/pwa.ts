@@ -19,7 +19,9 @@ export async function registerWorker(
       });
   });
   window.addEventListener("focus", () => {
-    void registration.update();
+    void registration.update().catch(() => {
+      // The installed shell remains usable when an update check is offline.
+    });
   });
   return registration;
 }
@@ -36,6 +38,16 @@ export function activateWorker(worker: ServiceWorker) {
     navigator.serviceWorker.addEventListener("controllerchange", changed, {
       once: true,
     });
-    worker.postMessage({ type: "ACTIVATE" });
+    try {
+      worker.postMessage({ type: "ACTIVATE" });
+    } catch {
+      clearTimeout(timer);
+      navigator.serviceWorker.removeEventListener("controllerchange", changed);
+      reject(
+        new Error(
+          "The waiting update is unavailable; saved data is preserved.",
+        ),
+      );
+    }
   });
 }

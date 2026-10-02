@@ -3,20 +3,20 @@
   "status": "PASS",
   "source": "isolated synthetic test database",
   "restored_to": "new isolated disposable database",
-  "archive_sha256": "0e1334ed591ba4f5c0023bdb1f23a48e9534a1eef405a0c0475ddf95594e8a46",
+  "archive_sha256": "f3ea23e18face6160db45053ceda5035360caae0f9817917558b26b8f7e36d55",
   "mode": "0600",
   "encryption": "RSA-OAEP-SHA256 / AES-256-GCM; ephemeral in-memory private key",
   "counts": {
-    "products": 12,
-    "product_prices": 13,
-    "sales": 4,
-    "sale_lines": 6,
-    "payments": 4,
-    "refunds": 4,
-    "refund_lines": 4,
-    "refund_payments": 4,
-    "stock_movements": 22,
-    "audit_events": 18
+    "products": 500,
+    "product_prices": 502,
+    "sales": 11,
+    "sale_lines": 19,
+    "payments": 11,
+    "refunds": 1,
+    "refund_lines": 1,
+    "refund_payments": 1,
+    "stock_movements": 523,
+    "audit_events": 41
   },
   "migrations": [
     {
@@ -33,10 +33,19 @@
     },
     {
       "version": "005-recovery-controls.sql"
+    },
+    {
+      "version": "006-production-security.sql"
+    },
+    {
+      "version": "007-inventory-snapshot.sql"
+    },
+    {
+      "version": "008-quarantine-grants.sql"
     }
   ],
   "financial_and_stock_reconciliation": "PASS",
   "post_restore_sale_and_idempotent_retry": "PASS (non-owner runtime role)",
-  "elapsed_ms": 4651,
+  "elapsed_ms": 402,
   "scope": "Restore rehearsal only; not a retained operational backup"
 }

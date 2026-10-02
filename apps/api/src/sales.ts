@@ -13,6 +13,51 @@ import { transaction, requireThat, numbers, Problem } from "./db.ts";
 import { digest, audit, movement, openShift, type Context } from "./context.ts";
 export const permitSignature = (claims: unknown, secret: string) =>
   createHmac("sha256", secret).update(canonical(claims)).digest("hex");
+export async function requireUnresolvedSale(
+  db: pg.PoolClient,
+  ctx: Context,
+  id: string,
+  hash: string,
+) {
+  const resolved = (
+    await db.query(
+      "SELECT payload_sha256 FROM sync_quarantine WHERE store_id=$1 AND client_document_id=$2 AND resolved_at IS NOT NULL",
+      [ctx.actor.store_id, id],
+    )
+  ).rows;
+  requireThat(
+    !resolved.some((row) => row.payload_sha256 === hash),
+    "DOCUMENT_RESOLVED",
+    409,
+    "This document was reconciled externally; preserve its original identity",
+  );
+  requireThat(
+    resolved.length === 0,
+    "IDEMPOTENCY_CONFLICT",
+    409,
+    "This identity has an externally reconciled document",
+  );
+}
+export async function preserveRejectedSale(
+  pool: pg.Pool,
+  ctx: Context,
+  sale: SaleCommand,
+  hash: string,
+  code: string,
+) {
+  await pool.query(
+    "INSERT INTO sync_quarantine(id,store_id,device_id,client_document_id,schema_version,payload,payload_sha256,reason_code) SELECT $1,$2,$3,$4,1,$5,$6,$7 WHERE EXISTS(SELECT 1 FROM devices WHERE store_id=$2 AND id=$3) ON CONFLICT DO NOTHING",
+    [
+      randomUUID(),
+      ctx.actor.store_id,
+      sale.device_id,
+      sale.client_sale_id,
+      JSON.stringify(sale),
+      hash,
+      code,
+    ],
+  );
+}
 export async function issuePermit(
   pool: pg.Pool,
   ctx: Context,
@@ -20,6 +65,9 @@ export async function issuePermit(
   secret: string,
 ) {
   return transaction(pool, async (db) => {
+    await db.query("SELECT id FROM stores WHERE id=$1 FOR UPDATE", [
+      ctx.actor.store_id,
+    ]);
     const shift = await openShift(db, ctx, shiftId, true);
     const revisions = (
       await db.query("SELECT id FROM product_prices WHERE store_id=$1", [
@@ -158,9 +206,24 @@ export async function postSale(
         );
         return { status: 200, body: result(existing) };
       }
+      await requireUnresolvedSale(db, ctx, s.client_sale_id, hash);
+      const registered = (
+        await db.query(
+          "SELECT payload_sha256 FROM terminal_documents WHERE store_id=$1 AND client_sale_id=$2",
+          [ctx.actor.store_id, s.client_sale_id],
+        )
+      ).rows[0];
+      requireThat(
+        !registered || registered.payload_sha256 === hash,
+        "IDEMPOTENCY_CONFLICT",
+        409,
+        "The frozen terminal document has different content",
+      );
       totals(s);
       const store = (
-        await db.query("SELECT * FROM stores WHERE id=$1", [ctx.actor.store_id])
+        await db.query("SELECT * FROM stores WHERE id=$1 FOR UPDATE", [
+          ctx.actor.store_id,
+        ])
       ).rows[0];
       requireThat(s.currency === store.currency, "VALIDATION_ERROR");
       const shift = await openShift(db, ctx, s.shift_id, true);
@@ -384,7 +447,6 @@ export async function postSale(
     });
   } catch (e) {
     if (
-      s.was_offline &&
       e instanceof Problem &&
       [
         "OFFLINE_PERMIT_INVALID",
@@ -392,21 +454,14 @@ export async function postSale(
         "FORBIDDEN",
         "SHIFT_NOT_OPEN",
         "IDEMPOTENCY_CONFLICT",
+        "VERSION_CONFLICT",
+        "STOCK_UNAVAILABLE",
+        "VALIDATION_ERROR",
+        "NOT_FOUND",
       ].includes(e.code)
     ) {
       // Preserve business evidence after the rejected posting transaction has rolled back.
-      await pool.query(
-        "INSERT INTO sync_quarantine(id,store_id,device_id,client_document_id,schema_version,payload,payload_sha256,reason_code) SELECT $1,$2,$3,$4,1,$5,$6,$7 WHERE EXISTS(SELECT 1 FROM devices WHERE store_id=$2 AND id=$3) ON CONFLICT DO NOTHING",
-        [
-          randomUUID(),
-          ctx.actor.store_id,
-          s.device_id,
-          s.client_sale_id,
-          JSON.stringify(s),
-          hash,
-          e.code,
-        ],
-      );
+      await preserveRejectedSale(pool, ctx, s, hash, e.code);
     }
     throw e;
   }

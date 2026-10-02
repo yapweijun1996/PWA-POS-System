@@ -54,3 +54,7 @@ The canonical demo is four units across three lines, due SGD 14.00, tender SGD 2
 ## Implemented contract follow-up
 
 `specs/openapi.yaml` now describes the local V1 implementation. `scripts/contracts.ts` synchronizes money-sensitive inputs with the shared Zod validators and records the route/response clarifications. Notable inputs are stable `client_event_id` stock commands, `counted_minor`/`reconciliation_id` shift close, `method` refund commands and per-shift offline-permit/reconciliation routes. Runtime financial, authorization and concurrency rules are also required; JSON Schema alone cannot prove them. See ADR 001 and actual QA evidence.
+
+## Production contract follow-up
+
+Operators and self-service passwords/session revocation are available under `/users` and `/auth`; terminal revocation is under `/devices/{id}`. `POST /sync/catalogue` accepts bounded UUID/hash pairs, uses catalogue plus inventory revisions and returns exact posted coverage and external-reconciliation dispositions. Registered rejected online sales also enter preserved manager review. The snapshot route permits a bounded 2 MiB body; normal commands retain the 256 KiB cap. `DOCUMENT_RESOLVED` prohibits reposting an externally accounted unposted identity. Complete schemas are generated from authoritative Zod inputs in `scripts/contracts.ts`. See ADR 002 for migration/session rollout and reconciliation semantics.

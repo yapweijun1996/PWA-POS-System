@@ -3,7 +3,20 @@ import {
   saleCommand,
   type SaleCommand,
 } from "../../../packages/contracts/index.ts";
-import { db, hashPayload, writerId, meta, type Outbox } from "./db.ts";
+import { canonical } from "../../../packages/domain/money.ts";
+import {
+  db,
+  hashPayload,
+  meta,
+  assertWriter,
+  externalResolution,
+  type Outbox,
+} from "./db.ts";
+import {
+  savedCommands,
+  validateSavedCommand,
+  type SavedCommand,
+} from "./commands.ts";
 const byteArray = z.array(z.number().int().min(0).max(255));
 const envelope = z
   .object({
@@ -14,9 +27,11 @@ const envelope = z
     ciphertext: byteArray.max(8_000_000),
   })
   .strict();
-export async function restoreRecovery(file: File, passphrase: string) {
-  if (file.size > 32_000_000) throw new Error("Recovery package exceeds 32 MB");
-  const data = envelope.parse(JSON.parse(await file.text()));
+async function recoveryKey(
+  passphrase: string,
+  salt: Uint8Array<ArrayBuffer>,
+  usage: "encrypt" | "decrypt",
+) {
   const base = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(passphrase),
@@ -24,17 +39,62 @@ export async function restoreRecovery(file: File, passphrase: string) {
     false,
     ["deriveKey"],
   );
-  const key = await crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      hash: "SHA-256",
-      salt: new Uint8Array(data.salt),
-      iterations: data.iterations,
-    },
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations: 250000 },
     base,
     { name: "AES-GCM", length: 256 },
     false,
-    ["decrypt"],
+    [usage],
+  );
+}
+export async function exportRecovery(passphrase: string): Promise<Blob> {
+  if (passphrase.length < 12)
+    throw new Error("Use a passphrase of at least 12 characters");
+  const snapshot = await db.transaction(
+    "r",
+    [db.outbox, db.meta],
+    async () => ({
+      documents: await db.outbox.toArray(),
+      commands: await savedCommands(),
+    }),
+  );
+  const content = JSON.stringify({
+    schema_version: 2,
+    ...snapshot,
+    checksum: await hashPayload(snapshot),
+  });
+  const salt = crypto.getRandomValues(new Uint8Array(16)),
+    iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await recoveryKey(passphrase, salt, "encrypt");
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    new TextEncoder().encode(content),
+  );
+  if (encrypted.byteLength > 8_000_000)
+    throw new Error(
+      "Recovery package exceeds the supported 8 MB encrypted payload. Preserve this terminal and contact support before clearing storage.",
+    );
+  return new Blob(
+    [
+      JSON.stringify({
+        version: 1,
+        iterations: 250000,
+        salt: Array.from(salt),
+        iv: Array.from(iv),
+        ciphertext: Array.from(new Uint8Array(encrypted)),
+      }),
+    ],
+    { type: "application/json" },
+  );
+}
+export async function restoreRecovery(file: File, passphrase: string) {
+  if (file.size > 32_000_000) throw new Error("Recovery package exceeds 32 MB");
+  const data = envelope.parse(JSON.parse(await file.text()));
+  const key = await recoveryKey(
+    passphrase,
+    new Uint8Array(data.salt),
+    "decrypt",
   );
   let plaintext: ArrayBuffer;
   try {
@@ -48,10 +108,18 @@ export async function restoreRecovery(file: File, passphrase: string) {
   }
   const raw = JSON.parse(new TextDecoder().decode(plaintext));
   if (
-    raw.schema_version !== 1 ||
+    !raw ||
+    ![1, 2].includes(raw.schema_version) ||
     !Array.isArray(raw.documents) ||
     raw.documents.length > 10000 ||
-    raw.checksum !== (await hashPayload(raw.documents))
+    (raw.schema_version === 2 &&
+      (!Array.isArray(raw.commands) || raw.commands.length > 3)) ||
+    raw.checksum !==
+      (await hashPayload(
+        raw.schema_version === 1
+          ? raw.documents
+          : { documents: raw.documents, commands: raw.commands },
+      ))
   )
     throw new Error("Recovery package checksum or schema is invalid");
   const documents: Outbox[] = [];
@@ -62,12 +130,26 @@ export async function restoreRecovery(file: File, passphrase: string) {
       row.hash !== (await hashPayload(payload))
     )
       throw new Error("Document identity or checksum is invalid");
+    const actor = z.string().uuid().parse(row.actor_id);
+    const resolution = row.resolution
+      ? externalResolution.parse(row.resolution)
+      : undefined;
+    if (
+      resolution &&
+      (resolution.client_sale_id !== payload.client_sale_id ||
+        resolution.payload_sha256 !== row.hash)
+    )
+      throw new Error(
+        "Recovery disposition does not match the preserved document",
+      );
     documents.push({
       id: payload.client_sale_id,
       payload,
       hash: row.hash,
-      actor_id: row.actor_id,
-      state: "PENDING",
+      actor_id: actor,
+      // Reconfirm imported dispositions with the server; never silently repost a reconciled sale.
+      state: resolution ? "NEEDS_REVIEW" : "PENDING",
+      ...(resolution ? { resolution } : {}),
       attempts: 0,
       next_retry_at: 0,
       created_at: Date.parse(payload.client_created_at),
@@ -75,13 +157,28 @@ export async function restoreRecovery(file: File, passphrase: string) {
   }
   if (new Set(documents.map((d) => d.id)).size !== documents.length)
     throw new Error("Duplicate document identity in recovery package");
+  const commands: SavedCommand[] = (
+    raw.schema_version === 2 ? raw.commands : []
+  ).map(validateSavedCommand);
+  if (new Set(commands.map((c) => c.key)).size !== commands.length)
+    throw new Error("Duplicate saved request slot in recovery package");
   await db.transaction(
     "rw",
     [db.sales, db.lines, db.payments, db.deltas, db.outbox, db.meta],
     async () => {
-      const writer = await meta<{ owner: string; expires: number }>("writer");
-      if (writer?.owner !== writerId || writer.expires < Date.now())
-        throw new Error("Use the writable terminal tab for recovery");
+      await assertWriter();
+      for (const command of commands) {
+        const prior = await meta<SavedCommand>(command.key);
+        if (
+          prior &&
+          canonical(validateSavedCommand({ ...prior, key: command.key })) !==
+            canonical(command)
+        )
+          throw new Error(
+            "A restored request conflicts with the preserved local request",
+          );
+        if (!prior) await db.meta.add({ key: command.key, value: command });
+      }
       for (const document of documents) {
         const prior = await db.outbox.get(document.id);
         if (prior) {

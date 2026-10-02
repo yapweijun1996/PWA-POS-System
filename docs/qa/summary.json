@@ -1,26 +1,63 @@
 {
-  "generated_at": "2026-10-02T15:31:10.223263+00:00",
-  "build_id": "counter-shell-a0127c71bd071edc",
-  "source_fingerprint_sha256": "a5e74f4d94d10cbdf05fbb3186cb87d78dfebf9c9bc4e927df450a7f3a0a76b5",
-  "unit_tests": 8,
-  "integration_groups": 15,
+  "generated_at": "2026-10-02T17:15:30.499806+00:00",
+  "build_id": "counter-shell-15ccf600ed68778f",
+  "source_fingerprint_sha256": "a4247a06ae1054d8578e34a525b13126cedd8a3d466a7549f3247a668fc9891e",
+  "unit_tests": 27,
+  "integration_groups": 29,
   "browser_tests": {
-    "startTime": "2026-10-02T15:26:39.826Z",
-    "duration": 87198.343,
-    "expected": 18,
-    "skipped": 0,
-    "unexpected": 0,
-    "flaky": 0
+    "chromium": {
+      "startTime": "2026-10-02T17:11:19.460Z",
+      "duration": 96601.30099999999,
+      "expected": 28,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "firefox": {
+      "startTime": "2026-10-02T17:09:26.177Z",
+      "duration": 38982.490999999995,
+      "expected": 7,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "webkit": {
+      "startTime": "2026-10-02T17:10:05.383Z",
+      "duration": 38160.335,
+      "expected": 7,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  },
+  "browser_harness_followups": {
+    "chromium": {
+      "startTime": "2026-10-02T17:08:19.080Z",
+      "duration": 15152.433,
+      "expected": 2,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "webkit": {
+      "startTime": "2026-10-02T17:07:44.332Z",
+      "duration": 18585.975000000002,
+      "expected": 2,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
   },
   "acceptance_status_counts": {
-    "PASS_AUTOMATED": 19,
-    "PARTIAL_AUTOMATED": 8,
+    "PASS_AUTOMATED": 26,
     "PARTIAL_AUTOMATED_HARDWARE_NOT_RUN": 2,
     "PASS_BROWSER_PHYSICAL_NOT_RUN": 1,
     "PARTIAL_AUTOMATED_MANUAL_NOT_RUN": 1,
+    "PARTIAL_AUTOMATED": 1,
     "NOT_RUN_PHYSICAL_DEVICE": 1
   },
   "backup_rehearsal": "PASS",
+  "production_container_drill": "PASS",
   "audit_vulnerabilities": 0,
-  "readiness": "Local V1 implementation verified; pilot and complete acceptance certification not approved"
+  "readiness": "Production implementation/package verified locally; public deployment, off-host operations and physical acceptance remain explicit gates."
 }

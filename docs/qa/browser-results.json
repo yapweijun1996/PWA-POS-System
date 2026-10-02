@@ -91,12 +91,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2765,
+                  "duration": 1061,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:26:46.637Z",
+                  "startTime": "2026-10-02T17:11:20.537Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -106,7 +106,7 @@
           ],
           "id": "8d72c8cda0dde62ea615-82f0f9b4d8094bfeeace",
           "file": "pos.spec.ts",
-          "line": 82,
+          "line": 205,
           "column": 1
         },
         {
@@ -125,12 +125,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 14333,
+                  "duration": 13138,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:26:49.824Z",
+                  "startTime": "2026-10-02T17:11:21.815Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -140,7 +140,7 @@
           ],
           "id": "8d72c8cda0dde62ea615-f0270097dfe7443ae1cd",
           "file": "pos.spec.ts",
-          "line": 111,
+          "line": 234,
           "column": 1
         },
         {
@@ -159,12 +159,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1174,
+                  "duration": 595,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:04.208Z",
+                  "startTime": "2026-10-02T17:11:34.959Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -174,7 +174,7 @@
           ],
           "id": "8d72c8cda0dde62ea615-6c6a8119bd6a3cc7c707",
           "file": "pos.spec.ts",
-          "line": 157,
+          "line": 323,
           "column": 1
         },
         {
@@ -193,12 +193,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 12962,
+                  "duration": 12832,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:05.398Z",
+                  "startTime": "2026-10-02T17:11:35.559Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -208,7 +208,7 @@
           ],
           "id": "8d72c8cda0dde62ea615-73b73263b77da91b5cae",
           "file": "pos.spec.ts",
-          "line": 197,
+          "line": 363,
           "column": 1
         },
         {
@@ -227,12 +227,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2228,
+                  "duration": 1540,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:18.380Z",
+                  "startTime": "2026-10-02T17:11:48.397Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -242,7 +242,7 @@
           ],
           "id": "8d72c8cda0dde62ea615-5530fe0728b6e0de86a1",
           "file": "pos.spec.ts",
-          "line": 214,
+          "line": 380,
           "column": 1
         },
         {
@@ -261,12 +261,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 288,
+                  "duration": 167,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:20.615Z",
+                  "startTime": "2026-10-02T17:11:49.945Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -276,7 +276,7 @@
           ],
           "id": "8d72c8cda0dde62ea615-246c0f8a02316bca45dd",
           "file": "pos.spec.ts",
-          "line": 271,
+          "line": 497,
           "column": 1
         },
         {
@@ -295,12 +295,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 556,
+                  "duration": 387,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:20.911Z",
+                  "startTime": "2026-10-02T17:11:50.116Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -310,7 +310,7 @@
           ],
           "id": "8d72c8cda0dde62ea615-626552b59e33cd3ac620",
           "file": "pos.spec.ts",
-          "line": 290,
+          "line": 516,
           "column": 3
         },
         {
@@ -329,12 +329,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 708,
+                  "duration": 388,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:21.475Z",
+                  "startTime": "2026-10-02T17:11:50.507Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -344,7 +344,7 @@
           ],
           "id": "8d72c8cda0dde62ea615-7d029699ea107b61d673",
           "file": "pos.spec.ts",
-          "line": 290,
+          "line": 516,
           "column": 3
         },
         {
@@ -363,12 +363,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 720,
+                  "duration": 361,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:22.194Z",
+                  "startTime": "2026-10-02T17:11:50.899Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -378,7 +378,7 @@
           ],
           "id": "8d72c8cda0dde62ea615-5e2e55381b0ed0788dc4",
           "file": "pos.spec.ts",
-          "line": 290,
+          "line": 516,
           "column": 3
         },
         {
@@ -397,12 +397,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 773,
+                  "duration": 392,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:22.924Z",
+                  "startTime": "2026-10-02T17:11:51.264Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -412,7 +412,7 @@
           ],
           "id": "8d72c8cda0dde62ea615-1d51a382378b90437078",
           "file": "pos.spec.ts",
-          "line": 290,
+          "line": 516,
           "column": 3
         },
         {
@@ -431,12 +431,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 963,
+                  "duration": 407,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:23.709Z",
+                  "startTime": "2026-10-02T17:11:51.661Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -446,7 +446,7 @@
           ],
           "id": "8d72c8cda0dde62ea615-b80e6054ddcdfc391a02",
           "file": "pos.spec.ts",
-          "line": 290,
+          "line": 516,
           "column": 3
         },
         {
@@ -465,12 +465,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1209,
+                  "duration": 359,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:24.685Z",
+                  "startTime": "2026-10-02T17:11:52.072Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -480,11 +480,181 @@
           ],
           "id": "8d72c8cda0dde62ea615-a0242cf2e5051fef8696",
           "file": "pos.spec.ts",
-          "line": 319,
+          "line": 545,
           "column": 1
         },
         {
           "title": "T32 expired session preserves AUTH_REQUIRED and resumes the same sale after sign-in",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 654,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-02T17:11:52.434Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8d72c8cda0dde62ea615-389386a5849ca82a68f6",
+          "file": "pos.spec.ts",
+          "line": 573,
+          "column": 1
+        },
+        {
+          "title": "FR02/03/07/12 back-office product, stock, refund and encrypted recovery roundtrip",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 15937,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-02T17:11:53.092Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8d72c8cda0dde62ea615-7213b227d4acae326f14",
+          "file": "pos.spec.ts",
+          "line": 600,
+          "column": 1
+        },
+        {
+          "title": "T23 mobile safe-area, long names and 200% equivalent reflow retain payment controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 441,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-02T17:12:09.033Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8d72c8cda0dde62ea615-774ff89ad316841ac0b5",
+          "file": "pos.spec.ts",
+          "line": 665,
+          "column": 1
+        },
+        {
+          "title": "FR04 500-product cached catalogue benchmark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1264,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-02T17:12:09.479Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8d72c8cda0dde62ea615-2ce0c1e794472b11c261",
+          "file": "pos.spec.ts",
+          "line": 719,
+          "column": 1
+        },
+        {
+          "title": "Uncertain cash movement is retained across reload and retries once",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 13201,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-02T17:12:10.750Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8d72c8cda0dde62ea615-1fa4ff763d376a563933",
+          "file": "pos.spec.ts",
+          "line": 848,
+          "column": 1
+        },
+        {
+          "title": "T02 rapid confirmation stores exactly one local and server sale",
           "ok": true,
           "tags": [],
           "tests": [
@@ -504,7 +674,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:25.927Z",
+                  "startTime": "2026-10-02T17:12:23.957Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -512,13 +682,13 @@
               "status": "expected"
             }
           ],
-          "id": "8d72c8cda0dde62ea615-389386a5849ca82a68f6",
+          "id": "8d72c8cda0dde62ea615-09bbf781615ee588b526",
           "file": "pos.spec.ts",
-          "line": 337,
+          "line": 977,
           "column": 1
         },
         {
-          "title": "FR02/03/07/12 back-office product, stock, refund and encrypted recovery roundtrip",
+          "title": "T26 multiple pending stock documents retain one projection across a lost acknowledgement",
           "ok": true,
           "tags": [],
           "tests": [
@@ -533,12 +703,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 16336,
+                  "duration": 2099,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:27.204Z",
+                  "startTime": "2026-10-02T17:12:25.227Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -546,13 +716,13 @@
               "status": "expected"
             }
           ],
-          "id": "8d72c8cda0dde62ea615-7213b227d4acae326f14",
+          "id": "8d72c8cda0dde62ea615-6c475f628c983271ce0a",
           "file": "pos.spec.ts",
-          "line": 364,
+          "line": 1004,
           "column": 1
         },
         {
-          "title": "T23 mobile safe-area, long names and 200% equivalent reflow retain payment controls",
+          "title": "T25 expired offline permit blocks checkout and preserves the unfinished order",
           "ok": true,
           "tags": [],
           "tests": [
@@ -567,12 +737,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1044,
+                  "duration": 871,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:43.553Z",
+                  "startTime": "2026-10-02T17:12:27.330Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -580,13 +750,13 @@
               "status": "expected"
             }
           ],
-          "id": "8d72c8cda0dde62ea615-774ff89ad316841ac0b5",
+          "id": "8d72c8cda0dde62ea615-5a7dfce55b38683ef961",
           "file": "pos.spec.ts",
-          "line": 429,
+          "line": 1072,
           "column": 1
         },
         {
-          "title": "FR04 500-product cached catalogue benchmark",
+          "title": "Production operator management and self-service password replacement work through Settings",
           "ok": true,
           "tags": [],
           "tests": [
@@ -601,12 +771,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3879,
+                  "duration": 1765,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:44.647Z",
+                  "startTime": "2026-10-02T17:12:28.205Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -614,13 +784,13 @@
               "status": "expected"
             }
           ],
-          "id": "8d72c8cda0dde62ea615-2ce0c1e794472b11c261",
+          "id": "8d72c8cda0dde62ea615-fa74c86cfd6e8f5b3db3",
           "file": "pos.spec.ts",
-          "line": 475,
+          "line": 1106,
           "column": 1
         },
         {
-          "title": "Uncertain cash movement is retained across reload and retries once",
+          "title": "T13 cash-count draft survives normal reload with its shift identity",
           "ok": true,
           "tags": [],
           "tests": [
@@ -635,12 +805,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 11618,
+                  "duration": 893,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:27:48.545Z",
+                  "startTime": "2026-10-02T17:12:29.974Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -648,9 +818,179 @@
               "status": "expected"
             }
           ],
-          "id": "8d72c8cda0dde62ea615-1fa4ff763d376a563933",
+          "id": "8d72c8cda0dde62ea615-49b5074bf70b7c10c4e5",
           "file": "pos.spec.ts",
-          "line": 604,
+          "line": 1190,
+          "column": 1
+        },
+        {
+          "title": "Payment review rejects a newly depleted stock balance before confirmation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 967,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-02T17:12:30.871Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8d72c8cda0dde62ea615-e2ec69c533cc66687895",
+          "file": "pos.spec.ts",
+          "line": 1212,
+          "column": 1
+        },
+        {
+          "title": "Externally reconciled rejected sale preserves its identity and unblocks shift close",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2902,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-02T17:12:31.841Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8d72c8cda0dde62ea615-6b78af577932c201a4a1",
+          "file": "pos.spec.ts",
+          "line": 1292,
+          "column": 1
+        },
+        {
+          "title": "T12 account switch removes manager costs and keeps cashier catalogue cache safe",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 941,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-02T17:12:34.748Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8d72c8cda0dde62ea615-c5607e066694b11819e6",
+          "file": "pos.spec.ts",
+          "line": 1424,
+          "column": 1
+        },
+        {
+          "title": "T04 canonical identity conflict remains visible until manager disposition and closes against the original receipt",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2268,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-02T17:12:35.694Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8d72c8cda0dde62ea615-550797e4624e2098342e",
+          "file": "pos.spec.ts",
+          "line": 1469,
+          "column": 1
+        },
+        {
+          "title": "MYR checkout labels, opening float and receipt use the configured store currency",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 14526,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-02T17:12:37.966Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8d72c8cda0dde62ea615-f473112c946ee819dcb6",
+          "file": "pos.spec.ts",
+          "line": 1573,
           "column": 1
         },
         {
@@ -669,12 +1009,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6689,
+                  "duration": 3470,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T15:28:00.173Z",
+                  "startTime": "2026-10-02T17:12:52.497Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -684,7 +1024,7 @@
           ],
           "id": "8d72c8cda0dde62ea615-ea2b19c93fbae5dafbd9",
           "file": "pos.spec.ts",
-          "line": 693,
+          "line": 1674,
           "column": 1
         }
       ]
@@ -692,9 +1032,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-02T15:26:39.826Z",
-    "duration": 87198.343,
-    "expected": 18,
+    "startTime": "2026-10-02T17:11:19.460Z",
+    "duration": 96601.30099999999,
+    "expected": 28,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

@@ -10,8 +10,8 @@ import {
   parseMoney,
   refundAllocation,
 } from "../../../packages/domain/money.ts";
-import { api } from "./api.ts";
-import { db, meta, putMeta, hashPayload, type Outbox } from "./db.ts";
+import { api, setCsrf } from "./api.ts";
+import { db, meta, putMeta, unresolved, type Outbox } from "./db.ts";
 import { synchronize } from "./sync.ts";
 import {
   savedCommands,
@@ -21,7 +21,7 @@ import {
   type SavedCommand,
 } from "./commands.ts";
 import { exportCsv } from "./export.ts";
-import { restoreRecovery } from "./recovery.ts";
+import { restoreRecovery, exportRecovery } from "./recovery.ts";
 import { Dialog, Field, Empty, download } from "./components.tsx";
 type Props = {
   screen: string;
@@ -34,6 +34,9 @@ type Props = {
   error: (s: string) => void;
   outbox: Outbox[];
   openShift: () => void;
+  reauthorize: () => Promise<void>;
+  hasDraft: boolean;
+  activity: (active: boolean) => void;
 };
 type SaleDetail = {
   id: string;
@@ -43,7 +46,19 @@ type SaleDetail = {
   refunds: { id: string; total_minor: number; reason: string }[];
   payment: SaleCommand["payment"];
 };
+type Operator = {
+  id: string;
+  email: string;
+  display_name: string;
+  role: "MANAGER" | "CASHIER";
+  active: boolean;
+  version: number;
+  created_at: string;
+};
 export function BackOffice(p: Props) {
+  const [operators, setOperators] = useState<Operator[]>([]),
+    [selectedOperator, setSelectedOperator] = useState<Operator | null>(null),
+    [selectedTerminal, setSelectedTerminal] = useState<string | null>(null);
   const [commands, setCommands] = useState<SavedCommand[]>([]);
   const [reviews, setReviews] = useState<Record<string, unknown>[]>([]),
     [recoveryFile, setRecoveryFile] = useState<File | null>(null),
@@ -65,6 +80,10 @@ export function BackOffice(p: Props) {
     [passphrase, setPassphrase] = useState("");
   const money = (n: number) => formatMoney(n, p.boot.store.currency);
   const manage = p.boot.user.role === "MANAGER";
+  useEffect(() => {
+    p.activity(busy || modal !== null);
+    return () => p.activity(false);
+  }, [busy, modal, p.activity]);
   async function load() {
     setCommands(await savedCommands());
     if (!p.online) return;
@@ -91,19 +110,26 @@ export function BackOffice(p: Props) {
     else if (p.screen === "Overview") setSummary(await api("/reports/daily"));
     else if (p.screen === "Sync center" && manage)
       setReviews(await api("/sync/review"));
-    else if (p.screen === "Settings") setRecords(await api("/audit"));
+    else if (p.screen === "Settings" && manage) {
+      setRecords(await api("/audit"));
+      setOperators(await api("/users"));
+    }
   }
   useEffect(() => {
     void load().catch((e) => p.error(e.message));
   }, [p.screen, p.online, search]);
   useEffect(() => {
-    void meta<{ count: string; reason: string }>("cash_count").then((v) => {
-      if (v) {
+    setCount("");
+    setWhy("");
+    void meta<{ shift_id: string; count: string; reason: string }>(
+      "cash_count",
+    ).then((v) => {
+      if (v && v.shift_id === p.shift?.id) {
         setCount(v.count);
         setWhy(v.reason);
       }
     });
-  }, []);
+  }, [p.shift?.id]);
   async function action(task: () => Promise<void>) {
     if (busy) return;
     if (!p.writer) {
@@ -218,19 +244,25 @@ export function BackOffice(p: Props) {
     await action(async () => {
       if (!p.shift) throw new Error("No open shift");
       await requireNoSavedCommands();
-      await putMeta("cash_count", { count, reason: why });
+      await putMeta("cash_count", { shift_id: p.shift.id, count, reason: why });
       const amount = parseMoney(count);
       await api(`/shifts/${p.shift.id}/count`, {
         counted_minor: amount,
         reason: why,
       });
       const ids = (
-        await db.sales.where("shift_id").equals(p.shift.id).toArray()
-      ).map((s) => s.client_sale_id);
+        await db.outbox
+          .filter(
+            (o) =>
+              o.payload.shift_id === p.shift!.id &&
+              (o.state === "ACKED" ||
+                (o.state === "EXTERNALLY_RESOLVED" &&
+                  !!o.resolution?.canonical_sale_id)),
+          )
+          .toArray()
+      ).map((o) => o.id);
       const pending = await db.outbox
-        .filter(
-          (o) => o.payload.shift_id === p.shift!.id && o.state !== "ACKED",
-        )
+        .filter((o) => o.payload.shift_id === p.shift!.id && unresolved(o))
         .count();
       const ack = await api<{ reconciliation_id: string }>(
         `/shifts/${p.shift.id}/reconcile`,
@@ -248,52 +280,107 @@ export function BackOffice(p: Props) {
   }
   async function recovery() {
     await action(async () => {
-      if (passphrase.length < 12)
-        throw new Error("Use a passphrase of at least 12 characters");
-      const docs = await db.outbox.toArray();
-      const content = JSON.stringify({
-        schema_version: 1,
-        device_id: p.shift?.device_id,
-        documents: docs,
-        checksum: await hashPayload(docs),
-      });
-      const salt = crypto.getRandomValues(new Uint8Array(16)),
-        iv = crypto.getRandomValues(new Uint8Array(12));
-      const base = await crypto.subtle.importKey(
-        "raw",
-        new TextEncoder().encode(passphrase),
-        "PBKDF2",
-        false,
-        ["deriveKey"],
-      );
-      const key = await crypto.subtle.deriveKey(
-        { name: "PBKDF2", hash: "SHA-256", salt, iterations: 250000 },
-        base,
-        { name: "AES-GCM", length: 256 },
-        false,
-        ["encrypt"],
-      );
-      const ciphertext = await crypto.subtle.encrypt(
-        { name: "AES-GCM", iv },
-        key,
-        new TextEncoder().encode(content),
-      );
       download(
         "counter-recovery.encrypted.json",
-        new Blob(
-          [
-            JSON.stringify({
-              version: 1,
-              iterations: 250000,
-              salt: Array.from(salt),
-              iv: Array.from(iv),
-              ciphertext: Array.from(new Uint8Array(ciphertext)),
-            }),
-          ],
-          { type: "application/json" },
-        ),
+        await exportRecovery(passphrase),
       );
       setPassphrase("");
+    });
+  }
+  async function accountSave(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget,
+      values = new FormData(form);
+    const creating = modal === "New operator",
+      resetting = modal === "Reset operator password";
+    const target = selectedOperator;
+    const body = creating
+      ? {
+          email: String(values.get("email")),
+          display_name: String(values.get("name")),
+          role: String(values.get("role")),
+          password: String(values.get("password")),
+        }
+      : resetting
+        ? {
+            version: target!.version,
+            new_password: String(values.get("password")),
+            reason: String(values.get("reason")),
+          }
+        : {
+            version: target!.version,
+            display_name: String(values.get("name")),
+            ...(target!.id === p.boot.user.id
+              ? {}
+              : {
+                  role: String(values.get("role")),
+                  active: values.get("active") === "on",
+                }),
+            reason: String(values.get("reason")),
+          };
+    form.reset();
+    await action(async () => {
+      if (!creating && target?.id === p.boot.user.id)
+        throw new Error(
+          "Another manager must edit your operator profile. Use the self-service password form for your own password.",
+        );
+      await requireNoSavedCommands();
+      await api(
+        creating
+          ? "/users"
+          : `/users/${target!.id}${resetting ? "/password" : ""}`,
+        body,
+        {},
+        creating || resetting ? "POST" : "PATCH",
+      );
+    });
+  }
+  async function ownAuthentication(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget,
+      values = new FormData(form);
+    const body = {
+      current_password: String(values.get("current_password")),
+      ...(modal === "Change my password"
+        ? { new_password: String(values.get("new_password")) }
+        : {}),
+    };
+    form.reset();
+    await action(async () => {
+      if (p.hasDraft || p.outbox.some(unresolved))
+        throw new Error(
+          "Finish or hold your order and synchronize saved sales before changing authentication.",
+        );
+      await requireNoSavedCommands();
+      const session = await api<{ csrf_token: string }>(
+        modal === "Change my password"
+          ? "/auth/password"
+          : "/auth/revoke-sessions",
+        body,
+      );
+      setCsrf(session.csrf_token);
+      await p.reauthorize();
+    });
+  }
+  async function terminalSave(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const values = new FormData(e.currentTarget),
+      revoking = modal === "Revoke terminal";
+    await action(async () => {
+      if (p.outbox.some(unresolved))
+        throw new Error(
+          "Synchronize or reconcile all saved sales before replacing this terminal. Existing documents are preserved.",
+        );
+      await requireNoSavedCommands();
+      await api(
+        revoking ? `/devices/${selectedTerminal}` : "/devices",
+        revoking
+          ? { revoked: true, reason: String(values.get("reason")) }
+          : { name: String(values.get("name")) },
+        {},
+        revoking ? "PATCH" : "POST",
+      );
+      await p.reauthorize();
     });
   }
   const disabled = !p.online || busy || !p.writer;
@@ -643,9 +730,7 @@ export function BackOffice(p: Props) {
                   <code>{o.id}</code>
                 </div>
                 <div>
-                  <span
-                    className={"badge " + (o.state === "ACKED" ? "" : "amber")}
-                  >
+                  <span className={"badge " + (unresolved(o) ? "amber" : "")}>
                     {o.state}
                   </span>
                   {o.last_error && (
@@ -655,6 +740,18 @@ export function BackOffice(p: Props) {
                   )}
                   {o.state === "NEEDS_REVIEW" && (
                     <p>Preserved for manager review. No automatic repost.</p>
+                  )}
+                  {o.resolution && (
+                    <p>
+                      Externally reconciled{" "}
+                      {new Date(o.resolution.resolved_at).toLocaleString()} ·{" "}
+                      {o.resolution.external_reference}
+                      <br />
+                      {o.resolution.reason}.{" "}
+                      {o.resolution.canonical_sale_id
+                        ? `Canonical receipt retained: ${o.resolution.canonical_receipt_no}`
+                        : "This document was not posted as a sale."}
+                    </p>
                   )}
                 </div>
               </article>
@@ -674,13 +771,14 @@ export function BackOffice(p: Props) {
                 <span>Expected cash</span>
                 <strong>{money(p.shift.expected_cash_minor)}</strong>
               </div>
-              <Field label="Actual cash (SGD)">
+              <Field label={`Actual cash (${p.boot.store.currency})`}>
                 <input
                   inputMode="decimal"
                   value={count}
                   onChange={(e) => {
                     setCount(e.target.value);
                     void putMeta("cash_count", {
+                      shift_id: p.shift?.id,
                       count: e.target.value,
                       reason: why,
                     });
@@ -693,6 +791,7 @@ export function BackOffice(p: Props) {
                   onChange={(e) => {
                     setWhy(e.target.value);
                     void putMeta("cash_count", {
+                      shift_id: p.shift?.id,
                       count,
                       reason: e.target.value,
                     });
@@ -706,11 +805,7 @@ export function BackOffice(p: Props) {
               </p>
               <button
                 className="primary"
-                disabled={
-                  disabled ||
-                  !count ||
-                  p.outbox.some((o) => o.state !== "ACKED")
-                }
+                disabled={disabled || !count || p.outbox.some(unresolved)}
                 onClick={() => void close()}
               >
                 Reconcile & close shift
@@ -750,19 +845,136 @@ export function BackOffice(p: Props) {
             </p>
             <p>
               Production setup, backups and recovery: see the repository
-              runbooks. This workspace uses synthetic data.
+              runbooks.
+              {p.boot.demo
+                ? " This workspace uses synthetic data."
+                : " Payment methods are recorded by the operator after external verification."}
             </p>
-          </div>
-          <h2>Audit trail</h2>
-          {records.map((r, i) => (
-            <div className="list-row" key={i}>
-              <span>
-                {String(r.action)}
-                <small>{String(r.reason ?? r.subject_type)}</small>
-              </span>
-              <time>{new Date(String(r.occurred_at)).toLocaleString()}</time>
+            <div className="two-fields">
+              <button
+                disabled={disabled}
+                onClick={() => setModal("Change my password")}
+              >
+                Change my password
+              </button>
+              <button
+                disabled={disabled}
+                onClick={() => setModal("Revoke my other sessions")}
+              >
+                Revoke other sessions
+              </button>
             </div>
-          ))}
+          </div>
+          {manage && (
+            <>
+              <div className="section-head">
+                <h2>Terminals</h2>
+                <button
+                  disabled={
+                    disabled || p.boot.devices.some((d) => !d.revoked_at)
+                  }
+                  onClick={() => setModal("Enroll terminal")}
+                >
+                  Enroll terminal
+                </button>
+              </div>
+              {p.boot.devices.map((device) => (
+                <div className="list-row" key={device.id}>
+                  <span>
+                    <strong>{device.name}</strong>
+                    <small>
+                      {device.revoked_at
+                        ? "Revoked permanently"
+                        : "Active selling terminal"}
+                    </small>
+                  </span>
+                  <button
+                    disabled={disabled || !!device.revoked_at}
+                    onClick={() => {
+                      setSelectedTerminal(device.id);
+                      setModal("Revoke terminal");
+                    }}
+                  >
+                    Revoke terminal
+                  </button>
+                </div>
+              ))}
+              <div className="section-head">
+                <h2>Operators</h2>
+                <button
+                  disabled={disabled}
+                  onClick={() => {
+                    setSelectedOperator(null);
+                    setModal("New operator");
+                  }}
+                >
+                  New operator
+                </button>
+              </div>
+              <p>
+                Role, activation and password changes revoke the operator’s
+                existing sessions. An operator with an open shift must finish it
+                before a security change.
+              </p>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name / email</th>
+                      <th>Role</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {operators.map((user) => (
+                      <tr key={user.id}>
+                        <td>
+                          <strong>{user.display_name}</strong>
+                          <br />
+                          <small>{user.email}</small>
+                        </td>
+                        <td>{user.role}</td>
+                        <td>{user.active ? "Active" : "Disabled"}</td>
+                        <td>
+                          <button
+                            disabled={disabled || user.id === p.boot.user.id}
+                            onClick={() => {
+                              setSelectedOperator(user);
+                              setModal("Edit operator");
+                            }}
+                          >
+                            Edit operator
+                          </button>
+                          <button
+                            disabled={disabled || user.id === p.boot.user.id}
+                            onClick={() => {
+                              setSelectedOperator(user);
+                              setModal("Reset operator password");
+                            }}
+                          >
+                            Reset password
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <h2>Audit trail</h2>
+              {records.map((r, i) => (
+                <div className="list-row" key={i}>
+                  <span>
+                    {String(r.action)}
+                    <small>{String(r.reason ?? r.subject_type)}</small>
+                  </span>
+                  <time>
+                    {new Date(String(r.occurred_at)).toLocaleString()}
+                  </time>
+                </div>
+              ))}
+            </>
+          )}
         </>
       )}
       {modal && (
@@ -772,6 +984,157 @@ export function BackOffice(p: Props) {
             if (!busy) setModal(null);
           }}
         >
+          {["Enroll terminal", "Revoke terminal"].includes(modal) && (
+            <form onSubmit={terminalSave}>
+              {modal === "Enroll terminal" ? (
+                <>
+                  <p>
+                    V1 allows one active selling terminal. A revoked terminal’s
+                    shift must be reconciled and closed before starting a
+                    replacement shift.
+                  </p>
+                  <Field label="Terminal name">
+                    <input name="name" required maxLength={80} />
+                  </Field>
+                </>
+              ) : (
+                <>
+                  <p>
+                    Revocation is permanent and invalidates offline permits.
+                    Confirm the terminal’s saved transactions first. Its
+                    existing shift and receipts remain available for
+                    reconciliation.
+                  </p>
+                  <Field label="Revocation reason">
+                    <textarea name="reason" required maxLength={500} />
+                  </Field>
+                </>
+              )}
+              <button className="primary" disabled={disabled}>
+                {modal === "Enroll terminal"
+                  ? "Enroll selling terminal"
+                  : "Confirm terminal revocation"}
+              </button>
+            </form>
+          )}
+          {[
+            "New operator",
+            "Edit operator",
+            "Reset operator password",
+          ].includes(modal) && (
+            <form onSubmit={accountSave}>
+              <p>
+                {modal === "New operator"
+                  ? "Create an account for this store. Give the initial password to the operator through your approved private channel."
+                  : "The original version is checked to prevent overwriting a newer account change."}
+              </p>
+              {modal !== "Reset operator password" && (
+                <>
+                  <Field label="Operator name">
+                    <input
+                      name="name"
+                      required
+                      maxLength={100}
+                      defaultValue={selectedOperator?.display_name ?? ""}
+                    />
+                  </Field>
+                  {modal === "New operator" && (
+                    <Field label="Operator email">
+                      <input
+                        name="email"
+                        type="email"
+                        required
+                        maxLength={254}
+                        autoComplete="off"
+                      />
+                    </Field>
+                  )}
+                  {(modal === "New operator" ||
+                    selectedOperator?.id !== p.boot.user.id) && (
+                    <Field label="Operator role">
+                      <select
+                        name="role"
+                        defaultValue={selectedOperator?.role ?? "CASHIER"}
+                      >
+                        <option value="CASHIER">Cashier</option>
+                        <option value="MANAGER">Manager</option>
+                      </select>
+                    </Field>
+                  )}
+                  {modal === "Edit operator" &&
+                    selectedOperator?.id !== p.boot.user.id && (
+                      <label className="check">
+                        <input
+                          name="active"
+                          type="checkbox"
+                          defaultChecked={selectedOperator?.active}
+                        />
+                        Account active
+                      </label>
+                    )}
+                </>
+              )}
+              {["New operator", "Reset operator password"].includes(modal) && (
+                <Field label="Initial password (12+ characters)">
+                  <input
+                    name="password"
+                    type="password"
+                    required
+                    minLength={12}
+                    maxLength={200}
+                    autoComplete="new-password"
+                  />
+                </Field>
+              )}
+              {modal !== "New operator" && (
+                <Field label="Account change reason">
+                  <textarea name="reason" required maxLength={500} />
+                </Field>
+              )}
+              <button className="primary" disabled={disabled}>
+                {modal === "Reset operator password"
+                  ? "Reset operator password"
+                  : "Save operator"}
+              </button>
+            </form>
+          )}
+          {["Change my password", "Revoke my other sessions"].includes(
+            modal,
+          ) && (
+            <form onSubmit={ownAuthentication}>
+              <p>
+                Saved sales and administrative requests must be confirmed first.
+                Your current session is replaced securely; other sessions
+                require a new sign-in.
+              </p>
+              <Field label="Current password">
+                <input
+                  name="current_password"
+                  type="password"
+                  required
+                  maxLength={200}
+                  autoComplete="current-password"
+                />
+              </Field>
+              {modal === "Change my password" && (
+                <Field label="New password (12+ characters)">
+                  <input
+                    name="new_password"
+                    type="password"
+                    required
+                    minLength={12}
+                    maxLength={200}
+                    autoComplete="new-password"
+                  />
+                </Field>
+              )}
+              <button className="primary" disabled={disabled}>
+                {modal === "Change my password"
+                  ? "Change password"
+                  : "Revoke other sessions"}
+              </button>
+            </form>
+          )}
           {["New product", "Edit product"].includes(modal) && (
             <form onSubmit={productSave}>
               <Field label="Product name">
@@ -813,7 +1176,7 @@ export function BackOffice(p: Props) {
                 </select>
               </Field>
               <div className="two-fields">
-                <Field label="Price (SGD)">
+                <Field label={`Price (${p.boot.store.currency})`}>
                   <input
                     name="price"
                     inputMode="decimal"
@@ -823,7 +1186,7 @@ export function BackOffice(p: Props) {
                     required
                   />
                 </Field>
-                <Field label="Cost (SGD)">
+                <Field label={`Cost (${p.boot.store.currency})`}>
                   <input
                     name="cost"
                     inputMode="decimal"
@@ -1056,7 +1419,7 @@ export function BackOffice(p: Props) {
                   <option value="out">Cash out</option>
                 </select>
               </Field>
-              <Field label="Amount (SGD)">
+              <Field label={`Amount (${p.boot.store.currency})`}>
                 <input name="amount" inputMode="decimal" required />
               </Field>
               <Field label="Reason">
@@ -1118,13 +1481,22 @@ export function BackOffice(p: Props) {
                     reason: String(f.get("reason")),
                     external_reference: String(f.get("reference")),
                   });
+                  setModal(null);
+                  try {
+                    await synchronize(true);
+                  } catch {
+                    p.error(
+                      "Reconciliation recorded on the server. Sync again to confirm it on this device; the original document remains preserved.",
+                    );
+                  }
                 });
               }}
             >
               <p>
                 This rejected transaction remains preserved. Record the separate
-                cash/stock reconciliation reference before resolving. This
-                action does not post a sale or transfer money.
+                cash/stock reconciliation reference after applying the physical
+                correction and the separate cash/stock entry. This action does
+                not post a sale or transfer money.
               </p>
               <Field label="Reconciliation reason">
                 <textarea name="reason" required maxLength={500} />
@@ -1141,7 +1513,9 @@ export function BackOffice(p: Props) {
             <>
               <p>
                 This package contains business records. Keep the file and
-                passphrase private. It preserves original UUIDs.
+                passphrase private. It preserves original sale UUIDs and saved
+                stock, refund and cash request identities. Draft and held orders
+                are not payment records and remain on this device.
               </p>
               <Field label="Encryption passphrase (12+ characters)">
                 <input

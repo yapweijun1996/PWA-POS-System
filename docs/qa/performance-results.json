@@ -1,8 +1,8 @@
 {
   "dataset": 500,
   "samples": 30,
-  "add_p95_ms": 27,
-  "search_p95_ms": 2,
+  "add_p95_ms": 18.299999997019768,
+  "search_p95_ms": 0.4000000059604645,
   "environment": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
   "measurement": "DOM update observed with performance.now; warm browser, synthetic products, no throttling"
 }

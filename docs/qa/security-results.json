@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-10-02T15:37:11.757Z",
+  "generated_at": "2026-10-02T17:14:50.369Z",
   "status": "PASS",
-  "source_files_scanned": 126,
-  "public_text_files_scanned": 21,
+  "source_files_scanned": 163,
+  "public_text_files_scanned": 22,
   "checks": [
     "Known cloud/API/private-key patterns in non-ignored source",
     "No database URLs, owner role or permit configuration in client sources/built assets"

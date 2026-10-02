@@ -3,6 +3,9 @@ import { randomUUID } from "node:crypto";
 import { writeFile, mkdir, readFile } from "node:fs/promises";
 import { database } from "../../apps/api/src/db.ts";
 import { createApp } from "../../apps/api/src/app.ts";
+import { databaseReady } from "../../apps/api/src/readiness.ts";
+import { runRecoveryDisposition } from "./recovery-disposition.ts";
+import { runProductionSecurity } from "./production-security.ts";
 import { migrate } from "../../scripts/migrate.ts";
 import { seed, storeId } from "../../scripts/seed.ts";
 import { lineMoney, saleMoney } from "../../packages/domain/money.ts";
@@ -237,6 +240,55 @@ export async function runIntegration() {
             )
           ).rows[0].count,
           "1",
+        );
+      },
+    );
+    await check(
+      "stock snapshots identify posted UUIDs and reject changed inventory cursors",
+      async () => {
+        const missing = randomUUID();
+        const first = await request("/sync/catalogue", {
+          sale_ids: [basket.client_sale_id, missing],
+        });
+        assert.equal(first.statusCode, 200, first.body);
+        assert.deepEqual(first.json().covered_sale_ids, [
+          basket.client_sale_id,
+        ]);
+        const product = catalogue.find(
+          (p) => !["DRK-001", "DRK-002", "DRK-003", "SNK-001"].includes(p.sku),
+        )!;
+        const write = await request("/inventory/receipts", {
+          client_event_id: randomUUID(),
+          product_id: product.id,
+          quantity: 1,
+          reason: "Synthetic snapshot revision check",
+        });
+        assert.equal(write.statusCode, 200, write.body);
+        const old = await request("/sync/catalogue", {
+          offset: 100,
+          cursor: first.json().cursor,
+          sale_ids: [],
+        });
+        assert.equal(old.statusCode, 409, old.body);
+        const latest = await request("/sync/catalogue", {
+          sale_ids: [basket.client_sale_id],
+        });
+        assert.notEqual(latest.json().cursor, first.json().cursor);
+        const item = latest
+          .json()
+          .items.find((p: Product) => p.id === product.id);
+        const balance = (
+          await pool.query(
+            "SELECT quantity FROM stock_balances WHERE product_id=$1",
+            [product.id],
+          )
+        ).rows[0];
+        assert.equal(item.quantity, balance.quantity);
+        const cashier = await request("/sync/catalogue", { sale_ids: [] }, ch);
+        assert.ok(
+          cashier
+            .json()
+            .items.every((p: Product) => p.cost_minor === undefined),
         );
       },
     );
@@ -640,6 +692,10 @@ export async function runIntegration() {
     await check(
       "T27 reporting excludes tender and applies refunds to their business date",
       async () => {
+        assert.equal(
+          (await request("/reports/daily?date=2026-02-31")).statusCode,
+          422,
+        );
         const r = (await request("/reports/daily")).json();
         const sum = Number(
           (await pool.query("SELECT sum(total_minor) AS sum FROM sales"))
@@ -730,12 +786,38 @@ export async function runIntegration() {
           counted_quantity: 0,
           reason: "Manager physically reviewed offline shortage",
         });
-        const ack = await request(`/shifts/${s.id}/reconcile`, {
+        let ack = await request(`/shifts/${s.id}/reconcile`, {
           device_id: s.device_id,
           sale_ids: ids,
           pending_count: 0,
         });
         assert.equal(ack.statusCode, 200, ack.body);
+        const late = sale([{ p: find("DRK-003"), q: 1 }]);
+        assert.equal((await request("/sync/register", late)).statusCode, 200);
+        assert.equal(
+          (
+            await request(`/shifts/${s.id}/close`, {
+              counted_minor: 0,
+              reason: "Synthetic test",
+              reconciliation_id: ack.json().reconciliation_id,
+            })
+          ).statusCode,
+          409,
+          "Registered document after reconciliation must block close",
+        );
+        assert.equal(
+          (await request("/sales", late, mh, "POST", late.client_sale_id))
+            .statusCode,
+          201,
+        );
+        ids.push(late.client_sale_id);
+        const fresh = await request(`/shifts/${s.id}/reconcile`, {
+          device_id: s.device_id,
+          sale_ids: ids,
+          pending_count: 0,
+        });
+        assert.equal(fresh.statusCode, 200, fresh.body);
+        ack = fresh;
         const shift = (await request("/shifts/current")).json();
         const count = shift.expected_cash_minor - 100;
         assert.equal(
@@ -765,6 +847,104 @@ export async function runIntegration() {
       },
     );
     await check(
+      "T27/T29 cross-date reports and exact 34800 cash count with cash-out",
+      async () => {
+        const category = catalogue[0].category_id;
+        const created = await request("/products", {
+          name: "Canonical cash fixture",
+          sku: "QA-CASH-34800",
+          category_id: category,
+          unit_price_minor: 1400,
+        });
+        assert.equal(created.statusCode, 201, created.body);
+        const product = (await request("/products"))
+          .json()
+          .items.find((p: Product) => p.id === created.json().id) as Product;
+        assert.equal(
+          (
+            await request("/inventory/receipts", {
+              client_event_id: randomUUID(),
+              product_id: product.id,
+              quantity: 3,
+              reason: "Synthetic canonical count",
+            })
+          ).statusCode,
+          200,
+        );
+        const second = (
+          await request("/shifts", {
+            device_id: s.device_id,
+            opening_float_minor: 32000,
+          })
+        ).json();
+        assert.ok(second.id);
+        await owner.query(
+          "UPDATE shifts SET business_date='2026-09-30' WHERE id=$1",
+          [second.id],
+        );
+        const document = {
+          ...sale([{ p: product, q: 1 }]),
+          shift_id: second.id,
+        };
+        assert.equal(
+          (
+            await request(
+              "/sales",
+              document,
+              mh,
+              "POST",
+              document.client_sale_id,
+            )
+          ).statusCode,
+          201,
+        );
+        for (const [amount, label] of [
+          [2000, "in"],
+          [-600, "out"],
+        ] as const)
+          assert.equal(
+            (
+              await request(`/shifts/${second.id}/cash-movements`, {
+                client_event_id: randomUUID(),
+                amount_minor: amount,
+                reason: `Synthetic cash ${label}`,
+              })
+            ).statusCode,
+            200,
+          );
+        assert.equal(
+          (await request("/shifts/current")).json().expected_cash_minor,
+          34800,
+        );
+        const report = (await request("/reports/daily?date=2026-09-30")).json();
+        assert.equal(report.gross_minor, 1400);
+        assert.equal(report.refunds_minor, 0);
+        assert.equal(report.orders, 1);
+        const today = (await request("/reports/daily")).json();
+        assert.notEqual(today.business_date, report.business_date);
+        const ack = await request(`/shifts/${second.id}/reconcile`, {
+          device_id: s.device_id,
+          sale_ids: [document.client_sale_id],
+          pending_count: 0,
+        });
+        assert.equal(ack.statusCode, 200, ack.body);
+        const close = await request(`/shifts/${second.id}/close`, {
+          counted_minor: 34800,
+          reconciliation_id: ack.json().reconciliation_id,
+        });
+        assert.equal(close.statusCode, 200, close.body);
+        assert.equal(close.json().variance_minor, 0);
+      },
+    );
+    await runRecoveryDisposition({
+      app,
+      pool,
+      managerHeaders: mh,
+      cashierHeaders: ch,
+      deviceId: s.device_id,
+      check,
+    });
+    await check(
       "all ledger balances, sale line sums and payment amounts reconcile",
       async () => {
         assert.equal(
@@ -788,16 +968,86 @@ export async function runIntegration() {
     await check(
       "health liveness remains independent of schema readiness",
       async () => {
-        await owner.query(
-          "DELETE FROM schema_migrations WHERE version='005-recovery-controls.sql'",
+        const removed = await owner.query(
+          "DELETE FROM schema_migrations WHERE version='005-recovery-controls.sql' RETURNING sha256",
         );
         assert.equal((await app.inject("/health/live")).statusCode, 200);
         assert.equal((await app.inject("/health/ready")).statusCode, 503);
         await owner.query(
-          "INSERT INTO schema_migrations(version) VALUES('005-recovery-controls.sql')",
+          "INSERT INTO schema_migrations(version,sha256) VALUES('005-recovery-controls.sql',$1)",
+          [removed.rows[0].sha256],
         );
       },
     );
+    await check(
+      "migration checksum drift refuses deployment and legacy baseline requires explicit review",
+      async () => {
+        const version = "007-inventory-snapshot.sql";
+        const original = (
+          await owner.query(
+            "SELECT sha256 FROM schema_migrations WHERE version=$1",
+            [version],
+          )
+        ).rows[0].sha256;
+        await owner.query(
+          "UPDATE schema_migrations SET sha256=$2 WHERE version=$1",
+          [version, "0".repeat(64)],
+        );
+        try {
+          await assert.rejects(migrate(ownerUrl), /checksum differs/);
+          await assert.rejects(databaseReady(pool, true));
+        } finally {
+          await owner.query(
+            "UPDATE schema_migrations SET sha256=$2 WHERE version=$1",
+            [version, original],
+          );
+        }
+        await owner.query(
+          "ALTER TABLE schema_migrations ALTER COLUMN sha256 DROP NOT NULL",
+        );
+        await owner.query(
+          "UPDATE schema_migrations SET sha256=NULL WHERE version=$1",
+          [version],
+        );
+        const prior = process.env.BASELINE_LEGACY_MIGRATIONS;
+        try {
+          delete process.env.BASELINE_LEGACY_MIGRATIONS;
+          await assert.rejects(
+            migrate(ownerUrl),
+            /Legacy migration checksums require reviewed/,
+          );
+          process.env.BASELINE_LEGACY_MIGRATIONS = "1";
+          await migrate(ownerUrl);
+          const row = (
+            await owner.query(
+              "SELECT sha256,checksum_baselined_at FROM schema_migrations WHERE version=$1",
+              [version],
+            )
+          ).rows[0];
+          assert.equal(row.sha256, original);
+          assert.ok(row.checksum_baselined_at);
+          await databaseReady(pool, true);
+        } finally {
+          if (prior === undefined)
+            delete process.env.BASELINE_LEGACY_MIGRATIONS;
+          else process.env.BASELINE_LEGACY_MIGRATIONS = prior;
+          await owner.query(
+            "UPDATE schema_migrations SET sha256=$2 WHERE version=$1",
+            [version, original],
+          );
+          await owner.query(
+            "ALTER TABLE schema_migrations ALTER COLUMN sha256 SET NOT NULL",
+          );
+        }
+      },
+    );
+    await runProductionSecurity({
+      app,
+      pool,
+      managerHeaders: mh,
+      cashierHeaders: ch,
+      check,
+    });
     await mkdir("docs/qa", { recursive: true });
     await writeFile(
       "docs/qa/integration-results.json",

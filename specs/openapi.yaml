@@ -926,6 +926,27 @@ paths:
           schema:
             type: string
             maxLength: 80
+    post:
+      summary: Read a consistent catalogue/stock page and identify already-posted
+        local sale IDs
+      description: Read a consistent catalogue/stock page and identify already-posted
+        local sale IDs
+      security:
+        - cookieAuth: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CatalogueSnapshot"
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CataloguePage"
   /shifts/{id}/reconcile:
     post:
       summary: Validate terminal upload watermark before closing
@@ -1035,7 +1056,7 @@ paths:
             schema:
               type: object
               properties:
-                reason: &a8
+                reason: &a6
                   type: string
                   maxLength: 500
                   minLength: 1
@@ -1067,6 +1088,170 @@ paths:
       security:
         - cookieAuth: []
       responses: *a5
+  /users:
+    get:
+      summary: List store operators
+      description: Manager only; normal cookie/CSRF authorization.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Store operators; credentials excluded
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      summary: Create store operator
+      description: Manager only; normal cookie/CSRF authorization.
+      security:
+        - cookieAuth: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUser"
+      responses:
+        "201":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /users/{id}:
+    patch:
+      summary: Change operator access with optimistic version; revoke old sessions
+      description: Manager only; normal cookie/CSRF authorization.
+      security:
+        - cookieAuth: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUser"
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: *a1
+  /users/{id}/password:
+    post:
+      summary: Reset another operator's password and revoke sessions
+      description: Manager only; normal cookie/CSRF authorization.
+      security:
+        - cookieAuth: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPassword"
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: *a1
+  /auth/password:
+    post:
+      summary: Verify current password, revoke old sessions and return a replacement
+        session
+      description: Verify current password, revoke old sessions and return a
+        replacement session
+      security:
+        - cookieAuth: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePassword"
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResult"
+  /auth/revoke-sessions:
+    post:
+      summary: Verify current password, revoke old sessions and return a replacement
+        session
+      description: Verify current password, revoke old sessions and return a
+        replacement session
+      security:
+        - cookieAuth: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevokeSessions"
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResult"
+  /devices/{id}:
+    patch:
+      summary: Permanently revoke terminal and offline permits; preserve existing
+        documents
+      description: Manager only; normal cookie/CSRF authorization.
+      security:
+        - cookieAuth: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                revoked:
+                  type: boolean
+                  const: true
+                reason: *a6
+              required:
+                - revoked
+                - reason
+              additionalProperties: false
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: *a1
 components:
   securitySchemes:
     cookieAuth:
@@ -1108,22 +1293,35 @@ components:
         - retryable
     User:
       type: object
-      additionalProperties: false
       properties:
-        id: *a3
+        id: *a1
+        email:
+          type: string
+          format: email
         display_name:
           type: string
-          minLength: 1
-          maxLength: 100
         role:
           type: string
           enum:
-            - CASHIER
             - MANAGER
+            - CASHIER
+        active:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
       required:
         - id
+        - email
         - display_name
         - role
+        - active
+        - version
+        - created_at
+      additionalProperties: false
     Login:
       type: object
       additionalProperties: false
@@ -1183,7 +1381,7 @@ components:
         category_name:
           type: string
         price_revision_id: *a1
-        unit_price_minor: &a6
+        unit_price_minor: &a7
           type: integer
           minimum: 0
           maximum: 1000000000
@@ -1200,7 +1398,7 @@ components:
           type: integer
         low_stock_threshold:
           type: integer
-        cost_minor: *a6
+        cost_minor: *a7
       required:
         - id
         - sku
@@ -1322,6 +1520,8 @@ components:
     Bootstrap:
       type: object
       properties:
+        demo:
+          type: boolean
         store:
           type: object
         user:
@@ -1336,6 +1536,7 @@ components:
           type: string
           format: date-time
       required:
+        - demo
         - store
         - user
         - devices
@@ -1462,7 +1663,7 @@ components:
           enum:
             - OPEN
             - CLOSED
-        opening_float_minor: *a6
+        opening_float_minor: *a7
         expected_cash_minor:
           type: integer
         version:
@@ -1479,8 +1680,8 @@ components:
     ShiftCount:
       type: object
       properties:
-        counted_minor: *a6
-        reason: &a7
+        counted_minor: *a7
+        reason: &a8
           type: string
           maxLength: 500
       required:
@@ -1489,8 +1690,8 @@ components:
     ShiftClose:
       type: object
       properties:
-        counted_minor: *a6
-        reason: *a7
+        counted_minor: *a7
+        reason: *a8
         reconciliation_id: *a1
       required:
         - counted_minor
@@ -1506,7 +1707,7 @@ components:
           maximum: 1000000000
           not:
             const: 0
-        reason: *a8
+        reason: *a6
       required:
         - client_event_id
         - amount_minor
@@ -1841,7 +2042,7 @@ components:
         id: *a1
         receipt_no:
           type: string
-        total_minor: *a6
+        total_minor: *a7
         lines:
           type: array
           items:
@@ -1970,7 +2171,7 @@ components:
         id: *a1
         client_refund_id: *a1
         original_sale_id: *a1
-        total_minor: *a6
+        total_minor: *a7
         posted_at:
           type: string
           format: date-time
@@ -2111,7 +2312,7 @@ components:
           type: integer
           minimum: 1
           maximum: 999999
-        reason: *a8
+        reason: *a6
       required:
         - client_event_id
         - product_id
@@ -2130,7 +2331,7 @@ components:
         expected_version:
           type: integer
           minimum: 1
-        reason: *a8
+        reason: *a6
       required:
         - client_event_id
         - product_id
@@ -2158,12 +2359,209 @@ components:
         full_snapshot:
           type: boolean
           const: true
+        covered_sale_ids:
+          type: array
+          maxItems: 10000
+          items: *a1
+        covered_documents:
+          type: array
+          maxItems: 10000
+          items:
+            type: object
+            properties:
+              client_sale_id: *a1
+              payload_sha256:
+                type: string
+                pattern: ^[a-f0-9]{64}$
+            required:
+              - client_sale_id
+              - payload_sha256
+            additionalProperties: false
+        resolved_documents:
+          type: array
+          maxItems: 10000
+          items:
+            $ref: "#/components/schemas/ExternalResolution"
       required:
         - items
         - cursor
         - next_offset
         - server_time
         - full_snapshot
+        - covered_sale_ids
+        - covered_documents
+        - resolved_documents
+      additionalProperties: false
+    CatalogueSnapshot:
+      type: object
+      properties:
+        offset:
+          default: 0
+          type: integer
+          minimum: 0
+          maximum: 100000
+        cursor:
+          type: string
+          maxLength: 80
+        sale_ids:
+          default: []
+          maxItems: 10000
+          type: array
+          items:
+            type: string
+            format: uuid
+            pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        documents:
+          default: []
+          maxItems: 10000
+          type: array
+          items:
+            type: object
+            properties:
+              client_sale_id:
+                type: string
+                format: uuid
+                pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+              payload_sha256:
+                type: string
+                pattern: ^[a-f0-9]{64}$
+            required:
+              - client_sale_id
+              - payload_sha256
+            additionalProperties: false
+      additionalProperties: false
+    CreateUser:
+      type: object
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          format: email
+          pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        role:
+          type: string
+          enum:
+            - MANAGER
+            - CASHIER
+        password:
+          type: string
+          minLength: 12
+          maxLength: 200
+      required:
+        - email
+        - display_name
+        - role
+        - password
+      additionalProperties: false
+    UpdateUser:
+      type: object
+      properties:
+        version:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 9007199254740991
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        role:
+          type: string
+          enum:
+            - MANAGER
+            - CASHIER
+        active:
+          type: boolean
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+        - version
+        - reason
+      additionalProperties: false
+    ResetPassword:
+      type: object
+      properties:
+        version:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 9007199254740991
+        new_password:
+          type: string
+          minLength: 12
+          maxLength: 200
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+        - version
+        - new_password
+        - reason
+      additionalProperties: false
+    ChangePassword:
+      type: object
+      properties:
+        current_password:
+          type: string
+          minLength: 1
+          maxLength: 200
+        new_password:
+          type: string
+          minLength: 12
+          maxLength: 200
+      required:
+        - current_password
+        - new_password
+      additionalProperties: false
+    RevokeSessions:
+      type: object
+      properties:
+        current_password:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+        - current_password
+      additionalProperties: false
+    ExternalResolution:
+      type: object
+      properties:
+        client_sale_id: *a1
+        payload_sha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        resolution_id: *a1
+        resolved_at:
+          type: string
+          format: date-time
+        reason: *a6
+        external_reference:
+          type: string
+          minLength: 1
+          maxLength: 120
+        canonical_sale_id:
+          type:
+            - string
+            - "null"
+          format: uuid
+        canonical_receipt_no:
+          type:
+            - string
+            - "null"
+      required:
+        - client_sale_id
+        - payload_sha256
+        - resolution_id
+        - resolved_at
+        - reason
+        - external_reference
+        - canonical_sale_id
+        - canonical_receipt_no
       additionalProperties: false
   responses:
     BadRequest:

@@ -39,6 +39,9 @@ export async function postRefund(
       );
       return { status: 200, body: numbers(previous) };
     }
+    await db.query("SELECT id FROM stores WHERE id=$1 FOR UPDATE", [
+      ctx.actor.store_id,
+    ]);
     const shift = await openShift(db, ctx, r.shift_id);
     const original = (
       await db.query(

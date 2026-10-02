@@ -9,9 +9,17 @@ import { z, ZodError } from "zod";
 import { database, transaction, Problem, requireThat, numbers } from "./db.ts";
 import type { Config } from "./config.ts";
 import { sessions } from "./auth.ts";
+import { accounts } from "./accounts.ts";
+import { databaseReady } from "./readiness.ts";
+import { catalogueSnapshot } from "./snapshot.ts";
 import { manager, audit, digest } from "./context.ts";
 import { catalogue, saveProduct, stockWrite } from "./catalogue.ts";
-import { postSale, issuePermit } from "./sales.ts";
+import {
+  postSale,
+  issuePermit,
+  requireUnresolvedSale,
+  preserveRejectedSale,
+} from "./sales.ts";
 import { postRefund } from "./refunds.ts";
 import { canonical } from "../../../packages/domain/money.ts";
 import { cursor, nextCursor } from "./pagination.ts";
@@ -30,7 +38,24 @@ export async function createApp(config: Config) {
   const pool = database(config.databaseUrl);
   const app = Fastify({
     bodyLimit: 256 * 1024,
-    logger: false,
+    logger: config.production
+      ? {
+          level: "info",
+          redact: [
+            "req.headers",
+            "req.body",
+            "res.headers",
+            "password",
+            "databaseUrl",
+            "secret",
+          ],
+          serializers: {
+            req: (req) => ({ method: req.method, url: req.url?.split("?")[0] }),
+          },
+        }
+      : false,
+    requestTimeout: 30000,
+    connectionTimeout: 10000,
     genReqId: () => randomUUID(),
   });
   await app.register(cookie);
@@ -39,6 +64,10 @@ export async function createApp(config: Config) {
     timeWindow: "1 minute",
   });
   await sessions(app, pool, config);
+  await accounts(app, pool, config);
+  app.addHook("onReady", async () => {
+    if (config.production) await databaseReady(pool, true);
+  });
   app.addHook("onClose", async () => {
     await pool.end();
   });
@@ -50,6 +79,12 @@ export async function createApp(config: Config) {
         "Content-Security-Policy",
         "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
       );
+    if (config.production)
+      reply.header("Strict-Transport-Security", "max-age=31536000");
+    reply.header(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=()",
+    );
     if (
       req.url.startsWith("/api") ||
       req.url === "/sw.js" ||
@@ -60,6 +95,28 @@ export async function createApp(config: Config) {
   });
   app.setErrorHandler((error, req, reply) => {
     const code = (error as { code?: string }).code;
+    const transportStatus = (error as { statusCode?: number }).statusCode;
+    if (transportStatus && [400, 413, 415].includes(transportStatus))
+      return reply.code(transportStatus).send({
+        code:
+          transportStatus === 413
+            ? "PAYLOAD_TOO_LARGE"
+            : transportStatus === 415
+              ? "UNSUPPORTED_MEDIA_TYPE"
+              : "BAD_REQUEST",
+        message:
+          transportStatus === 413
+            ? "Request exceeds the supported size"
+            : "Invalid request format",
+        request_id: req.id,
+        retryable: false,
+        details: [],
+      });
+    if (!(error instanceof Problem) && !(error instanceof ZodError))
+      req.log.error(
+        { request_id: req.id, error_code: code ?? "INTERNAL_ERROR" },
+        "Request failed",
+      );
     const problem =
       error instanceof Problem
         ? error
@@ -114,23 +171,11 @@ export async function createApp(config: Config) {
   });
   app.get("/health/live", () => ({ status: "live", demo: config.demo }));
   app.get("/health/ready", async () => {
-    const r = await pool.query(
-      "SELECT version FROM schema_migrations ORDER BY version",
-    );
-    requireThat(
-      [
-        "001-core.sql",
-        "002-runtime.sql",
-        "003-runtime-grants.sql",
-        "004-history-row-locks.sql",
-        "005-recovery-controls.sql",
-      ].every((v) => r.rows.some((r) => r.version === v)),
-      "SERVICE_UNAVAILABLE",
-      503,
-    );
+    await databaseReady(pool, config.production);
     return { status: "ready" };
   });
   app.get("/api/v1/bootstrap", async (req) => ({
+    demo: config.demo,
     store: (
       await pool.query(
         "SELECT id,name,currency,timezone,tax_enabled,catalogue_version FROM stores WHERE id=$1",
@@ -223,6 +268,39 @@ export async function createApp(config: Config) {
       await audit(db, req.context, "DEVICE_ENROLLED", "device", did);
     });
     return reply.code(201).send({ id: did, name: p.name });
+  });
+  app.patch("/api/v1/devices/:id", async (req) => {
+    manager(req.context);
+    const did = id.parse((req.params as { id: string }).id);
+    const input = z
+      .object({ revoked: z.literal(true), reason })
+      .strict()
+      .parse(req.body);
+    return transaction(pool, async (db) => {
+      await db.query("SELECT id FROM stores WHERE id=$1 FOR UPDATE", [
+        req.context.actor.store_id,
+      ]);
+      const device = (
+        await db.query(
+          "UPDATE devices SET revoked_at=coalesce(revoked_at,now()),selling=false WHERE store_id=$1 AND id=$2 RETURNING id,name,revoked_at",
+          [req.context.actor.store_id, did],
+        )
+      ).rows[0];
+      requireThat(device, "NOT_FOUND", 404);
+      await db.query(
+        "UPDATE offline_permits SET revoked_at=coalesce(revoked_at,now()) WHERE store_id=$1 AND device_id=$2",
+        [req.context.actor.store_id, did],
+      );
+      await audit(
+        db,
+        req.context,
+        "DEVICE_REVOKED",
+        "device",
+        did,
+        input.reason,
+      );
+      return device;
+    });
   });
   app.get("/api/v1/inventory/balances", async (req) => {
     manager(req.context);
@@ -483,33 +561,13 @@ export async function createApp(config: Config) {
     });
   });
   app.get("/api/v1/sync/catalogue", async (req) => {
-    const q = z
-      .object({
-        offset: z.coerce.number().int().min(0).max(100000).default(0),
-        cursor: z.string().max(80).optional(),
-      })
-      .parse(req.query);
-    const v = (
-      await pool.query("SELECT catalogue_version FROM stores WHERE id=$1", [
-        req.context.actor.store_id,
-      ])
-    ).rows[0].catalogue_version;
-    if (q.cursor)
-      requireThat(
-        q.cursor === String(v),
-        "VERSION_CONFLICT",
-        409,
-        "Catalogue revision changed; restart the snapshot",
-      );
-    const items = await catalogue(pool, req.context, true, 100, q.offset);
-    return {
-      items,
-      cursor: String(v),
-      next_offset: items.length === 100 ? q.offset + 100 : null,
-      server_time: new Date().toISOString(),
-      full_snapshot: true,
-    };
+    return catalogueSnapshot(pool, req.context, req.query);
   });
+  app.post(
+    "/api/v1/sync/catalogue",
+    { bodyLimit: 2 * 1024 * 1024 },
+    async (req) => catalogueSnapshot(pool, req.context, req.body),
+  );
   app.get("/api/v1/sync/status", async (req) => ({
     server_time: new Date().toISOString(),
     quarantine_count: Number(
@@ -528,6 +586,13 @@ export async function createApp(config: Config) {
         date: z
           .string()
           .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .refine(
+            (value) =>
+              value.slice(0, 4) !== "0000" &&
+              Number.isFinite(Date.parse(value)) &&
+              new Date(value).toISOString().slice(0, 10) === value,
+            "Invalid calendar date",
+          )
           .optional(),
       })
       .parse(req.query);
@@ -570,39 +635,71 @@ export async function createApp(config: Config) {
   app.post("/api/v1/sync/register", async (req) => {
     const s = saleCommand.parse(req.body);
     requireThat(!s.was_offline, "VALIDATION_ERROR");
-    return transaction(pool, async (db) => {
-      const shift = (
+    const hash = digest(canonical(s));
+    try {
+      return await transaction(pool, async (db) => {
+        await db.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
+          `${req.context.actor.store_id}:sale:${s.client_sale_id}`,
+        ]);
+        const posted = (
+          await db.query(
+            "SELECT payload_sha256 FROM sales WHERE store_id=$1 AND client_sale_id=$2",
+            [req.context.actor.store_id, s.client_sale_id],
+          )
+        ).rows[0];
+        if (posted) {
+          requireThat(
+            posted.payload_sha256 === hash,
+            "IDEMPOTENCY_CONFLICT",
+            409,
+          );
+          return { registered: true };
+        }
+        await requireUnresolvedSale(db, req.context, s.client_sale_id, hash);
+        await db.query("SELECT id FROM stores WHERE id=$1 FOR UPDATE", [
+          req.context.actor.store_id,
+        ]);
+        const shift = (
+          await db.query(
+            "SELECT id FROM shifts WHERE store_id=$1 AND id=$2 AND device_id=$3 AND opened_by=$4 AND state='OPEN' FOR UPDATE",
+            [
+              req.context.actor.store_id,
+              s.shift_id,
+              s.device_id,
+              req.context.actor.id,
+            ],
+          )
+        ).rows[0];
+        requireThat(shift, "SHIFT_NOT_OPEN", 409);
         await db.query(
-          "SELECT id FROM shifts WHERE store_id=$1 AND id=$2 AND device_id=$3 AND opened_by=$4 AND state='OPEN' FOR UPDATE",
+          "INSERT INTO terminal_documents(store_id,shift_id,device_id,client_sale_id,payload_sha256) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING",
           [
             req.context.actor.store_id,
             s.shift_id,
             s.device_id,
-            req.context.actor.id,
+            s.client_sale_id,
+            hash,
           ],
+        );
+        const prior = (
+          await db.query(
+            "SELECT payload_sha256 FROM terminal_documents WHERE store_id=$1 AND client_sale_id=$2",
+            [req.context.actor.store_id, s.client_sale_id],
+          )
+        ).rows[0];
+        requireThat(prior.payload_sha256 === hash, "IDEMPOTENCY_CONFLICT", 409);
+        return { registered: true };
+      });
+    } catch (error) {
+      if (
+        error instanceof Problem &&
+        ["SHIFT_NOT_OPEN", "IDEMPOTENCY_CONFLICT", "FORBIDDEN"].includes(
+          error.code,
         )
-      ).rows[0];
-      requireThat(shift, "SHIFT_NOT_OPEN", 409);
-      const hash = digest(canonical(s));
-      await db.query(
-        "INSERT INTO terminal_documents(store_id,shift_id,device_id,client_sale_id,payload_sha256) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING",
-        [
-          req.context.actor.store_id,
-          s.shift_id,
-          s.device_id,
-          s.client_sale_id,
-          hash,
-        ],
-      );
-      const prior = (
-        await db.query(
-          "SELECT payload_sha256 FROM terminal_documents WHERE store_id=$1 AND client_sale_id=$2",
-          [req.context.actor.store_id, s.client_sale_id],
-        )
-      ).rows[0];
-      requireThat(prior.payload_sha256 === hash, "IDEMPOTENCY_CONFLICT", 409);
-      return { registered: true };
-    });
+      )
+        await preserveRejectedSale(pool, req.context, s, hash, error.code);
+      throw error;
+    }
   });
   app.get("/api/v1/sync/review", async (req) => {
     manager(req.context);
@@ -621,13 +718,75 @@ export async function createApp(config: Config) {
       .parse(req.body);
     const qid = id.parse((req.params as { id: string }).id);
     return transaction(pool, async (db) => {
+      const candidate = (
+        await db.query(
+          "SELECT client_document_id,payload_sha256 FROM sync_quarantine WHERE store_id=$1 AND id=$2",
+          [req.context.actor.store_id, qid],
+        )
+      ).rows[0];
+      requireThat(candidate, "NOT_FOUND", 404);
+      await db.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
+        `${req.context.actor.store_id}:sale:${candidate.client_document_id}`,
+      ]);
+      await db.query("SELECT id FROM stores WHERE id=$1 FOR UPDATE", [
+        req.context.actor.store_id,
+      ]);
       const row = (
         await db.query(
-          "SELECT id FROM sync_quarantine WHERE store_id=$1 AND id=$2 AND resolved_at IS NULL FOR UPDATE",
+          "SELECT * FROM sync_quarantine WHERE store_id=$1 AND id=$2 FOR UPDATE",
           [req.context.actor.store_id, qid],
         )
       ).rows[0];
       requireThat(row, "NOT_FOUND", 404);
+      const canonicalSale = (
+        await db.query(
+          "SELECT id,receipt_no FROM sales WHERE store_id=$1 AND client_sale_id=$2",
+          [req.context.actor.store_id, candidate.client_document_id],
+        )
+      ).rows[0];
+      if (row.resolved_at) {
+        requireThat(
+          row.resolution_reason === q.reason &&
+            row.resolution_reference === q.external_reference,
+          "IDEMPOTENCY_CONFLICT",
+          409,
+          "This case already has a different recorded reconciliation",
+        );
+        return {
+          preserved: true,
+          resolved: true,
+          canonical_sale_id: canonicalSale?.id ?? null,
+          receipt_no: canonicalSale?.receipt_no ?? null,
+        };
+      }
+      const registered = (
+        await db.query(
+          "SELECT payload_sha256 FROM terminal_documents WHERE store_id=$1 AND client_sale_id=$2",
+          [req.context.actor.store_id, candidate.client_document_id],
+        )
+      ).rows[0];
+      if (
+        !canonicalSale &&
+        registered &&
+        registered.payload_sha256 !== candidate.payload_sha256
+      ) {
+        const frozenResolved = (
+          await db.query(
+            "SELECT id FROM sync_quarantine WHERE store_id=$1 AND client_document_id=$2 AND payload_sha256=$3 AND resolved_at IS NOT NULL",
+            [
+              req.context.actor.store_id,
+              candidate.client_document_id,
+              registered.payload_sha256,
+            ],
+          )
+        ).rowCount;
+        requireThat(
+          frozenResolved,
+          "IDEMPOTENCY_CONFLICT",
+          409,
+          "Review the original frozen document before resolving changed content",
+        );
+      }
       await db.query(
         "UPDATE sync_quarantine SET resolved_at=now(),resolved_by=$3,resolution_reason=$4,resolution_reference=$5 WHERE store_id=$1 AND id=$2",
         [
@@ -638,15 +797,26 @@ export async function createApp(config: Config) {
           q.external_reference,
         ],
       );
+      await db.query(
+        "UPDATE stores SET inventory_version=inventory_version+1 WHERE id=$1",
+        [req.context.actor.store_id],
+      );
       await audit(
         db,
         req.context,
-        "RECOVERY_RECONCILED_EXTERNALLY",
+        canonicalSale
+          ? "CANONICAL_CONFLICT_REVIEWED"
+          : "RECOVERY_RECONCILED_EXTERNALLY",
         "quarantine",
         qid,
         q.reason,
       );
-      return { preserved: true, resolved: true };
+      return {
+        preserved: true,
+        resolved: true,
+        canonical_sale_id: canonicalSale?.id ?? null,
+        receipt_no: canonicalSale?.receipt_no ?? null,
+      };
     });
   });
   app.get("/api/v1/audit", async (req) => {

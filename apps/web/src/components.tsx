@@ -1,4 +1,12 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useId,
+  isValidElement,
+  cloneElement,
+  type ReactNode,
+  type ReactElement,
+} from "react";
 import tones from "./product-tones.json";
 import type { Product } from "../../../packages/contracts/index.ts";
 export function Dialog({
@@ -55,10 +63,18 @@ export function Field({
   label: string;
   children: ReactNode;
 }) {
+  const labelId = useId();
+  const control = isValidElement(children)
+    ? (children as ReactElement<Record<string, unknown>>)
+    : null;
   return (
     <label className="field">
-      <span>{label}</span>
-      {children}
+      <span id={labelId}>{label}</span>
+      {control &&
+      !control.props["aria-label"] &&
+      !control.props["aria-labelledby"]
+        ? cloneElement(control, { "aria-labelledby": labelId })
+        : children}
     </label>
   );
 }

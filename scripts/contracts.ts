@@ -9,6 +9,14 @@ import {
   productWrite,
   refundCommand,
 } from "../packages/contracts/index.ts";
+import {
+  createUserCommand,
+  updateUserCommand,
+  resetPasswordCommand,
+  changePasswordCommand,
+  revokeSessionsCommand,
+} from "../apps/api/src/accounts.ts";
+import { snapshotQuery } from "../apps/api/src/snapshot.ts";
 const spec = YAML.parse(await readFile("specs/openapi.yaml", "utf8"));
 spec.info = {
   title: "Counter POS V1 API",
@@ -124,6 +132,17 @@ schema.ProductsPage = object({
   },
   next_cursor: { type: ["string", "null"] },
 });
+schema.CatalogueSnapshot = json(snapshotQuery);
+schema.ExternalResolution = object({
+  client_sale_id: id,
+  payload_sha256: { type: "string", pattern: "^[a-f0-9]{64}$" },
+  resolution_id: id,
+  resolved_at: { type: "string", format: "date-time" },
+  reason,
+  external_reference: { type: "string", minLength: 1, maxLength: 120 },
+  canonical_sale_id: { type: ["string", "null"], format: "uuid" },
+  canonical_receipt_no: { type: ["string", "null"] },
+});
 schema.CataloguePage = object({
   items: {
     type: "array",
@@ -134,6 +153,20 @@ schema.CataloguePage = object({
   next_offset: { type: ["integer", "null"] },
   server_time: { type: "string", format: "date-time" },
   full_snapshot: { type: "boolean", const: true },
+  covered_sale_ids: { type: "array", maxItems: 10000, items: id },
+  covered_documents: {
+    type: "array",
+    maxItems: 10000,
+    items: object({
+      client_sale_id: id,
+      payload_sha256: { type: "string", pattern: "^[a-f0-9]{64}$" },
+    }),
+  },
+  resolved_documents: {
+    type: "array",
+    maxItems: 10000,
+    items: { $ref: "#/components/schemas/ExternalResolution" },
+  },
 });
 const detailLine = {
   ...schema.SaleLine,
@@ -189,6 +222,7 @@ schema.Shift = object(
   true,
 );
 schema.Bootstrap = object({
+  demo: { type: "boolean" },
   store: { type: "object" },
   user: { type: "object" },
   devices: { type: "array", items: { type: "object" } },
@@ -323,6 +357,89 @@ function operation(
     },
   };
 }
+paths["/sync/catalogue"].post = operation(
+  "Read a consistent catalogue/stock page and identify already-posted local sale IDs",
+  "post",
+  { $ref: "#/components/schemas/CatalogueSnapshot" },
+).post;
+paths["/sync/catalogue"].post.responses = response("CataloguePage");
+for (const [name, value] of Object.entries({
+  CreateUser: createUserCommand,
+  UpdateUser: updateUserCommand,
+  ResetPassword: resetPasswordCommand,
+  ChangePassword: changePasswordCommand,
+  RevokeSessions: revokeSessionsCommand,
+}))
+  schema[name] = json(value);
+schema.User = object({
+  id,
+  email: { type: "string", format: "email" },
+  display_name: { type: "string" },
+  role: { type: "string", enum: ["MANAGER", "CASHIER"] },
+  active: { type: "boolean" },
+  version: { type: "integer", minimum: 1 },
+  created_at: { type: "string", format: "date-time" },
+});
+paths["/users"] = {
+  ...operation("List store operators", "get", undefined, true),
+  ...operation(
+    "Create store operator",
+    "post",
+    { $ref: "#/components/schemas/CreateUser" },
+    true,
+  ),
+};
+paths["/users"].get.responses = {
+  "200": {
+    description: "Store operators; credentials excluded",
+    content: {
+      "application/json": {
+        schema: { type: "array", items: { $ref: "#/components/schemas/User" } },
+      },
+    },
+  },
+};
+paths["/users"].post.responses = response("User", "201");
+paths["/users/{id}"] = operation(
+  "Change operator access with optimistic version; revoke old sessions",
+  "patch",
+  { $ref: "#/components/schemas/UpdateUser" },
+  true,
+);
+paths["/users/{id}"].patch.parameters = [
+  { name: "id", in: "path", required: true, schema: id },
+];
+paths["/users/{id}"].patch.responses = response("User");
+paths["/users/{id}/password"] = operation(
+  "Reset another operator's password and revoke sessions",
+  "post",
+  { $ref: "#/components/schemas/ResetPassword" },
+  true,
+);
+paths["/users/{id}/password"].post.parameters = [
+  { name: "id", in: "path", required: true, schema: id },
+];
+paths["/users/{id}/password"].post.responses = response("User");
+for (const [path, ref] of [
+  ["/auth/password", "ChangePassword"],
+  ["/auth/revoke-sessions", "RevokeSessions"],
+]) {
+  paths[path] = operation(
+    "Verify current password, revoke old sessions and return a replacement session",
+    "post",
+    { $ref: `#/components/schemas/${ref}` },
+  );
+  paths[path].post.responses = response("LoginResult");
+}
+paths["/devices/{id}"] = operation(
+  "Permanently revoke terminal and offline permits; preserve existing documents",
+  "patch",
+  object({ revoked: { type: "boolean", const: true }, reason }),
+  true,
+);
+paths["/devices/{id}"].patch.parameters = [
+  { name: "id", in: "path", required: true, schema: id },
+];
 paths["/categories"].post = operation(
   "Create a category",
   "post",

@@ -36,6 +36,9 @@ export async function newShift(
   float: number,
 ) {
   return transaction(pool, async (db) => {
+    await db.query("SELECT id FROM stores WHERE id=$1 FOR UPDATE", [
+      ctx.actor.store_id,
+    ]);
     const d = (
       await db.query(
         "SELECT * FROM devices WHERE store_id=$1 AND id=$2 AND revoked_at IS NULL AND selling FOR UPDATE",
@@ -63,6 +66,9 @@ export async function reconcile(
   pending: number,
 ) {
   return transaction(pool, async (db) => {
+    await db.query("SELECT id FROM stores WHERE id=$1 FOR UPDATE", [
+      ctx.actor.store_id,
+    ]);
     const s = await openShift(db, ctx, id, ctx.actor.role === "CASHIER");
     requireThat(s.device_id === device, "FORBIDDEN", 403);
     requireThat(
@@ -74,7 +80,7 @@ export async function reconcile(
     requireThat(
       !(
         await db.query(
-          "SELECT 1 FROM terminal_documents d WHERE d.store_id=$1 AND d.shift_id=$2 AND NOT EXISTS(SELECT 1 FROM sales s WHERE s.store_id=d.store_id AND s.client_sale_id=d.client_sale_id)",
+          "SELECT 1 FROM terminal_documents d WHERE d.store_id=$1 AND d.shift_id=$2 AND NOT EXISTS(SELECT 1 FROM sales s WHERE s.store_id=d.store_id AND s.client_sale_id=d.client_sale_id) AND NOT EXISTS(SELECT 1 FROM sync_quarantine q WHERE q.store_id=d.store_id AND q.client_document_id=d.client_sale_id AND q.payload_sha256=d.payload_sha256 AND q.resolved_at IS NOT NULL)",
           [ctx.actor.store_id, id],
         )
       ).rowCount,
@@ -135,6 +141,9 @@ export async function closeShift(
   token: string,
 ) {
   return transaction(pool, async (db) => {
+    await db.query("SELECT id FROM stores WHERE id=$1 FOR UPDATE", [
+      ctx.actor.store_id,
+    ]);
     const s = await openShift(db, ctx, id, ctx.actor.role === "CASHIER");
     const ack = (
       await db.query(
@@ -164,6 +173,28 @@ export async function closeShift(
       ).rowCount,
       "NEEDS_REVIEW",
       409,
+    );
+    requireThat(
+      !(
+        await db.query(
+          "SELECT 1 FROM terminal_documents d WHERE d.store_id=$1 AND d.shift_id=$2 AND NOT EXISTS(SELECT 1 FROM sales s WHERE s.store_id=d.store_id AND s.client_sale_id=d.client_sale_id) AND NOT EXISTS(SELECT 1 FROM sync_quarantine q WHERE q.store_id=d.store_id AND q.client_document_id=d.client_sale_id AND q.payload_sha256=d.payload_sha256 AND q.resolved_at IS NOT NULL)",
+          [ctx.actor.store_id, id],
+        )
+      ).rowCount,
+      "NEEDS_REVIEW",
+      409,
+      "Registered terminal documents changed since reconciliation",
+    );
+    requireThat(
+      !(
+        await db.query(
+          "SELECT 1 FROM stock_balances WHERE store_id=$1 AND quantity<0",
+          [ctx.actor.store_id],
+        )
+      ).rowCount,
+      "NEEDS_REVIEW",
+      409,
+      "Recount negative stock before closing",
     );
     const expected = await expectedCash(db, ctx.actor.store_id, id);
     requireThat(

@@ -44,3 +44,7 @@ No service, container, cloud bill, GitHub repository, domain, backup automation 
 ## Local implementation follow-up
 
 The local V1 now has pinned builds, five migrations, a non-owner API role, a synthetic demonstration and CI configuration. See [the implementation ADR](adr/001-v1-implementation.md), [local runbook](runbooks/local-development.md), [recovery runbook](runbooks/recovery.md) and [executed QA](qa/REPORT.md). Hosting, HTTPS production, retained/off-host backups, RPO/RTO, public release and physical pilot checks remain unexecuted. The original kit-scope description above is historical.
+
+## Production hardening follow-up
+
+[ADR 002](adr/002-production-hardening.md), [production deployment](runbooks/production.md) and [retained encrypted backup](runbooks/production-backup.md) supersede affected local-only statements above. The package now includes non-root containers, same-origin HTTPS, separate owner/migrator/runtime credentials, checksum-enforced migrations and isolated production-stack/restore verification. The exact performed checks are in [QA evidence](qa/REPORT.md). Public hosting, off-host retention/scheduling and achieved RPO/RTO still require the chosen operating environment.

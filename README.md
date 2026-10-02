@@ -2,7 +2,7 @@
 
 A responsive, single-store PWA point of sale and inventory ledger with bounded offline cash selling. Implemented from this repository's product and engineering Markdown specifications.
 
-**Local V1 implementation. Synthetic demonstration. No real payment or ERP integration.** Working name and software license remain unapproved. Physical-device and production readiness are separate from the automated checks.
+**Production hardening and a deployable single-store package.** Local demonstrations use synthetic data. Card/PayNow remain manual external records; ERP delivery is deferred. Actual deployment and physical-device acceptance are recorded separately from automated evidence.
 
 ![Implemented desktop sell screen](docs/qa/screenshots/sell-1440.png)
 
@@ -25,7 +25,7 @@ For code editing, `npm run dev` starts Vite plus the API. Test offline/install/u
 
 | Capability | Implementation / evidence |
 | --- | --- |
-| Cookie authentication, roles, CSRF, named terminal, one shift | Implemented; PostgreSQL authorization/immutability checks |
+| Named operators, password/access/session lifecycle, CSRF, terminals | Implemented; session revocation, account versions, runtime privilege and secure-cookie checks |
 | Products, categories, archive and immutable price revisions | Implemented; paginated administration, stale edits and historical receipts tested |
 | Stock receipt/count adjustment and immutable ledger | Implemented; stable retry IDs, version conflicts and ledger reconciliation tested |
 | Search, keyboard-wedge input, quantity, undo and local holds | Implemented; browser input/focus tested; physical scanner NOT RUN |
@@ -36,10 +36,11 @@ For code editing, `npm run dev` starts Vite plus the API. Test offline/install/u
 | Cash in/out, count draft, terminal reconciliation and close | Implemented; pending/quarantine/negative-stock/variance gates |
 | IndexedDB atomic sale/outbox, writer lease and foreground retry | Reload, quota abort, lease takeover, auth recovery and watermark tests |
 | Installable shell and explicit safe worker update | Actual N→N+1 waiting-worker test with pending data |
-| Encrypted browser recovery and database restore rehearsal | Implemented and exercised in synthetic isolated environments |
+| Encrypted browser recovery, retained database backup and isolated restore | Sale/admin command recovery, authenticated backup verification and container drill |
+| Production containers, HTTPS proxy, migration integrity and release gate | Non-root runtime, private PostgreSQL, secret files and migration checksum refusal |
 | ERP adapter / automated payments / fiscal compliance | Deferred; no live integration or compliance claim |
 
-The [implementation ADR](docs/adr/001-v1-implementation.md) records all defaults and contract clarifications. The [QA report](docs/qa/REPORT.md) states exact executed checks and physical/remote items not run. The original [design-bundle validation](validation/REPORT.md), PDFs and HTML prototype remain historical design evidence.
+The [implementation ADR](docs/adr/001-v1-implementation.md) records the V1 baseline. [Production hardening decisions](docs/adr/002-production-hardening.md) describe current account, snapshot, recovery and release contracts. The [QA report](docs/qa/REPORT.md) states exact executed checks and physical/remote items not run. The original [design-bundle validation](validation/REPORT.md), PDFs and HTML prototype remain historical design evidence.
 
 ## Verify
 
@@ -49,9 +50,11 @@ npm run format:check
 npm run security:check
 npm test
 npm run test:integration
-npx playwright install chromium
+npx playwright install chromium firefox webkit
 npm run test:e2e
+npm run test:browser-matrix
 npm run backup:rehearse
+npm run production:rehearse
 npm audit --audit-level=moderate
 ```
 
@@ -64,7 +67,7 @@ Run database tests sequentially. Test launchers reset only the loopback `counter
 - `packages/domain`: bounded integer money, tax and cumulative refund allocation.
 - `packages/contracts`: runtime input validation and shared DTOs.
 - `infra/migrations`: ordered transactionally recorded SQL and a separate non-owner runtime role.
-- `tests`: pure rules, disposable PostgreSQL integration, and real Chromium browser scenarios.
+- `tests`: pure rules, disposable PostgreSQL integration, Chromium flows and Firefox/WebKit compatibility scenarios.
 - `docs/qa`: actual execution evidence and screenshots; `docs/runbooks`: operating/recovery instructions.
 - `specs`: implemented [OpenAPI](specs/openapi.yaml), original reference schema and synthetic fixtures.
 - `design`, `prototype`, `reading`, `pdf`: preserved design kit. Open `START-HERE.html` for the original specification navigation.
@@ -77,4 +80,4 @@ Complete online sign-in, catalogue download, local storage self-test, device enr
 
 “Saved on this device” is distinct from “Synced”. Open the app to finish foreground sync. Browser storage may be cleared/evicted or lost with the device; it is not a backup. Never delete pending records to recover a failure. Read the [recovery runbook](docs/runbooks/recovery.md) before handling a review case or backup.
 
-No deployment, public publishing, live migration, real customer data, payment provider, Globe3 write, hardware certification or legal tax setup is included. The next release gate is physical iPhone/Android/thermal-printer/scanner verification and reviewed operational backup/hosting configuration.
+See the [production runbook](docs/runbooks/production.md) and [retained backup runbook](docs/runbooks/production-backup.md) for the deployable Docker/HTTPS package. `npm run production:rehearse` uses only isolated synthetic containers and removes its own volumes and keys. Public deployment needs the chosen server/domain, private secrets, off-host backup retention and physical acceptance. Executed evidence is in [the QA report](docs/qa/REPORT.md).

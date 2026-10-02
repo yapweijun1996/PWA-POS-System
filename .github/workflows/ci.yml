@@ -1,8 +1,14 @@
 name: verify
 on: [push, pull_request]
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     services:
       postgres:
         image: postgres:16.13
@@ -27,17 +33,21 @@ jobs:
       - run: npm run build
       - run: npm run format:check
       - run: npm run security:check
-      - run: npm test
+      - run: npm test -- --reporter=json --outputFile=docs/qa/unit-results.json
+      - run: npm run contracts
+      - run: git diff --exit-code -- specs/openapi.yaml
       - run: npm run db:migrate
         env:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
       - name: Configure isolated CI runtime role
         run: psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -c "ALTER ROLE counter_pos_app PASSWORD 'local-ci-only'"
       - run: npm run test:integration
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run test:e2e
+      - run: npm run test:browser-matrix
       - run: npm run backup:rehearse
-      - run: npm audit --audit-level=moderate
+      - run: npm audit --audit-level=moderate --json > docs/qa/dependency-audit.json
+      - run: npm run production:rehearse
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -22,9 +22,9 @@ export default defineConfig({
 const ASSETS=${JSON.stringify(["/", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png", ...readdirSync("apps/web/public/products").map((k) => "/products/" + k), ...assets.map((k) => "/" + k)])};
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS))));
 self.addEventListener('message',event=>{if(event.data?.type==='ACTIVATE')self.skipWaiting();});
-self.addEventListener('activate',event=>event.waitUntil((async()=>{const keys=(await caches.keys()).filter(k=>k.startsWith('counter-shell-'));for(const key of keys.slice(0,-2))await caches.delete(key);await self.clients.claim();})()));
+self.addEventListener('activate',event=>event.waitUntil((async()=>{const keys=(await caches.keys()).filter(k=>k.startsWith('counter-shell-'));const keep=new Set([CACHE,...keys.filter(k=>k!==CACHE).slice(-1)]);for(const key of keys)if(!keep.has(key))await caches.delete(key);await self.clients.claim();})()));
 self.addEventListener('fetch',event=>{const url=new URL(event.request.url);if(event.request.method!=='GET'||url.origin!==self.location.origin||url.pathname.startsWith('/api/')||url.pathname.startsWith('/health/'))return;
-if(event.request.mode==='navigate'){event.respondWith(fetch(event.request).catch(()=>caches.open(CACHE).then(c=>c.match('/'))));return;}
+if(event.request.mode==='navigate'){event.respondWith((async()=>{let response;try{response=await fetch(event.request);if(response.status<500)return response;}catch{}return(await caches.open(CACHE).then(c=>c.match('/')))||response||Response.error();})());return;}
 if(ASSETS.includes(url.pathname))event.respondWith(caches.open(CACHE).then(async c=>(await c.match(url.pathname))||fetch(event.request)));
 });`,
         });

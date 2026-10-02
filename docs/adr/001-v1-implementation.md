@@ -1,6 +1,6 @@
 # ADR 001: Local V1 implementation baseline
 
-Status: implemented for the authorized local repository on 2 October 2026. This is not approval for deployment, payments, an ERP connection, a license or a pilot shop.
+Status: historical local baseline from 2 October 2026. [ADR 002](002-production-hardening.md) supersedes affected account, stock snapshot, recovery, migration and operations decisions. This is not approval for deployment, payments, an ERP connection, a license or a pilot shop.
 
 The request to finish the project following its Markdown authorizes the V1 scope in `prompts/IMPLEMENTATION-TASK.md`. The existing design kit is retained as historical design evidence. The application lives in `apps/`, shared pure rules in `packages/`, reviewed migrations in `infra/migrations/`, and actual verification in `docs/qa/`.
 

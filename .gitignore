@@ -1,6 +1,9 @@
 # Dependencies and generated builds
 node_modules/
 dist/
+build/
+backups/
+secrets/
 *.tsbuildinfo
 
 # Local credentials and database state

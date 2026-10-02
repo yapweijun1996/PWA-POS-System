@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-02T15:17:15.030Z",
+  "generated_at": "2026-10-02T16:57:57.149Z",
   "environment": "isolated PostgreSQL 16 / runtime non-owner role",
   "results": [
     {
@@ -12,6 +12,10 @@
     },
     {
       "test": "T03 actual HTTP response is dropped after COMMIT; stable retry returns original",
+      "status": "PASS"
+    },
+    {
+      "test": "stock snapshots identify posted UUIDs and reject changed inventory cursors",
       "status": "PASS"
     },
     {
@@ -55,11 +59,63 @@
       "status": "PASS"
     },
     {
+      "test": "T27/T29 cross-date reports and exact 34800 cash count with cash-out",
+      "status": "PASS"
+    },
+    {
+      "test": "Online rejected frozen payment can be reconciled without deleting evidence or reposting cash",
+      "status": "PASS"
+    },
+    {
+      "test": "Canonical identity conflict resolution proves both payload hash and original receipt",
+      "status": "PASS"
+    },
+    {
+      "test": "Posting and manager disposition share one UUID lock and cannot create an externally resolved duplicate",
+      "status": "PASS"
+    },
+    {
+      "test": "Snapshot body supports its documented bounds and malformed transport is a definite rejection",
+      "status": "PASS"
+    },
+    {
+      "test": "Runtime can resolve quarantines but cannot rewrite their original receipt identity or payload",
+      "status": "PASS"
+    },
+    {
       "test": "all ledger balances, sale line sums and payment amounts reconcile",
       "status": "PASS"
     },
     {
       "test": "health liveness remains independent of schema readiness",
+      "status": "PASS"
+    },
+    {
+      "test": "migration checksum drift refuses deployment and legacy baseline requires explicit review",
+      "status": "PASS"
+    },
+    {
+      "test": "Production operators: cashier denied, normalized identities and credential projections",
+      "status": "PASS"
+    },
+    {
+      "test": "Production auth: secure cookies, disabled demo, origin/CSRF enforcement and keyed storage",
+      "status": "PASS"
+    },
+    {
+      "test": "Production session policy: inactivity, absolute expiry, logout and login rate limits",
+      "status": "PASS"
+    },
+    {
+      "test": "Password lifecycle: old sessions revoked, replacement valid, concurrent changes cannot both succeed",
+      "status": "PASS"
+    },
+    {
+      "test": "Manager reset/deactivation: stale versions rejected and old sessions cannot regain access",
+      "status": "PASS"
+    },
+    {
+      "test": "Concurrent operator permission changes revalidate the manager after acquiring the store lock",
       "status": "PASS"
     }
   ]
