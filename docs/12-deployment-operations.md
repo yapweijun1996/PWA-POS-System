@@ -39,3 +39,8 @@ For duplicate suspicion, search by original UUID and request ID before retrying.
 ## Scope of this delivery
 
 No service, container, cloud bill, GitHub repository, domain, backup automation or scheduled monitoring has been created by generating this kit. The deployment model and commands to be implemented remain future work.
+
+
+## Local implementation follow-up
+
+The local V1 now has pinned builds, five migrations, a non-owner API role, a synthetic demonstration and CI configuration. See [the implementation ADR](adr/001-v1-implementation.md), [local runbook](runbooks/local-development.md), [recovery runbook](runbooks/recovery.md) and [executed QA](qa/REPORT.md). Hosting, HTTPS production, retained/off-host backups, RPO/RTO, public release and physical pilot checks remain unexecuted. The original kit-scope description above is historical.

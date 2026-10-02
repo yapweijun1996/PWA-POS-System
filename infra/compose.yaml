@@ -1,0 +1,13 @@
+services:
+  postgres:
+    image: postgres:16.13
+    environment:
+      POSTGRES_USER: counter_pos_owner
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Provide a private local password}
+      POSTGRES_DB: counter_pos_dev
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - pos-development-data:/var/lib/postgresql/data
+volumes:
+  pos-development-data:

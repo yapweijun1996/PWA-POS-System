@@ -1,0 +1,42 @@
+{
+  "test_id": "T19",
+  "status": "PASS",
+  "source": "isolated synthetic test database",
+  "restored_to": "new isolated disposable database",
+  "archive_sha256": "0e1334ed591ba4f5c0023bdb1f23a48e9534a1eef405a0c0475ddf95594e8a46",
+  "mode": "0600",
+  "encryption": "RSA-OAEP-SHA256 / AES-256-GCM; ephemeral in-memory private key",
+  "counts": {
+    "products": 12,
+    "product_prices": 13,
+    "sales": 4,
+    "sale_lines": 6,
+    "payments": 4,
+    "refunds": 4,
+    "refund_lines": 4,
+    "refund_payments": 4,
+    "stock_movements": 22,
+    "audit_events": 18
+  },
+  "migrations": [
+    {
+      "version": "001-core.sql"
+    },
+    {
+      "version": "002-runtime.sql"
+    },
+    {
+      "version": "003-runtime-grants.sql"
+    },
+    {
+      "version": "004-history-row-locks.sql"
+    },
+    {
+      "version": "005-recovery-controls.sql"
+    }
+  ],
+  "financial_and_stock_reconciliation": "PASS",
+  "post_restore_sale_and_idempotent_retry": "PASS (non-owner runtime role)",
+  "elapsed_ms": 4651,
+  "scope": "Restore rehearsal only; not a retained operational backup"
+}

@@ -50,3 +50,7 @@ Include schema_version in frozen offline payloads. Support the previous offline 
 ## Examples
 
 The canonical demo is four units across three lines, due SGD 14.00, tender SGD 20.00, change SGD 6.00. No tax or discount. Client-generated UUIDs in the fixture identify synthetic data only. A real client must generate its own stable IDs once and persist them before retries.
+
+## Implemented contract follow-up
+
+`specs/openapi.yaml` now describes the local V1 implementation. `scripts/contracts.ts` synchronizes money-sensitive inputs with the shared Zod validators and records the route/response clarifications. Notable inputs are stable `client_event_id` stock commands, `counted_minor`/`reconciliation_id` shift close, `method` refund commands and per-shift offline-permit/reconciliation routes. Runtime financial, authorization and concurrency rules are also required; JSON Schema alone cannot prove them. See ADR 001 and actual QA evidence.
