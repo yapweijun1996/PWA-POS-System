@@ -1,9 +1,9 @@
 {
-  "title": "PWA POS Full Documentation and Visual Design Kit",
+  "title": "Counter POS V1 Application and Documentation Kit",
   "version": "1.0",
   "prepared_for": "Yap Wei Jun",
   "date": "2026-10-02",
-  "status": "Proposed design and documentation; application not implemented",
+  "status": "Local V1 implemented and verified; pilot gates remain NOT RUN",
   "start_here": "START-HERE.html",
   "handbook_pages": 40,
   "atlas_pages": 28,
@@ -13,7 +13,17 @@
   "engineering_diagrams": 4,
   "api_operations": 27,
   "planned_acceptance_scenarios": 32,
-  "application_acceptance_status": "NOT RUN",
+  "application_acceptance_status": "Scoped evidence and gaps in docs/qa/REPORT.md and specs/test-cases.csv",
   "prototype_smoke_assertions_passed": 13,
-  "artifact_checks_passed": 16
+  "artifact_checks_passed": 16,
+  "implementation": {
+    "build_id": "counter-shell-a0127c71bd071edc",
+    "unit_tests_passed": 8,
+    "integration_groups_passed": 15,
+    "browser_tests_passed": 18,
+    "qa_report": "docs/qa/REPORT.md",
+    "physical_pilot": "NOT RUN",
+    "production_deployment": "NOT RUN"
+  },
+  "historical_kit_statistics": "Original design-kit counts retained below; application evidence is in implementation."
 }

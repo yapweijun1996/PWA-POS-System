@@ -1,0 +1,8 @@
+{
+  "generated_at": "2026-10-02T15:26:02.076Z",
+  "status": "PASS",
+  "paths": 30,
+  "local_references": 198,
+  "canonical_fixture": "Runtime command validation PASS",
+  "scope": "YAML parsing, local reference resolution and shared runtime schemas; full OpenAPI conformance certification NOT RUN"
+}

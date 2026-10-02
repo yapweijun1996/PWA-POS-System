@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-10-02T15:31:10.223263+00:00",
+  "build_id": "counter-shell-a0127c71bd071edc",
+  "source_fingerprint_sha256": "a5e74f4d94d10cbdf05fbb3186cb87d78dfebf9c9bc4e927df450a7f3a0a76b5",
+  "unit_tests": 8,
+  "integration_groups": 15,
+  "browser_tests": {
+    "startTime": "2026-10-02T15:26:39.826Z",
+    "duration": 87198.343,
+    "expected": 18,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "acceptance_status_counts": {
+    "PASS_AUTOMATED": 19,
+    "PARTIAL_AUTOMATED": 8,
+    "PARTIAL_AUTOMATED_HARDWARE_NOT_RUN": 2,
+    "PASS_BROWSER_PHYSICAL_NOT_RUN": 1,
+    "PARTIAL_AUTOMATED_MANUAL_NOT_RUN": 1,
+    "NOT_RUN_PHYSICAL_DEVICE": 1
+  },
+  "backup_rehearsal": "PASS",
+  "audit_vulnerabilities": 0,
+  "readiness": "Local V1 implementation verified; pilot and complete acceptance certification not approved"
+}

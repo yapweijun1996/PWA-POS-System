@@ -1,6 +1,6 @@
 # 10 · Test strategy and acceptance gates
 
-> 中文重点：测试计划不是测试结果。本次交付的实际检查写在 validation/REPORT.md。
+> 中文重点：测试计划不是测试结果。当前应用的执行证据见 [docs/qa/REPORT.md](qa/REPORT.md)；validation/REPORT.md 保留原设计包的历史检查。
 
 ## Layers
 
