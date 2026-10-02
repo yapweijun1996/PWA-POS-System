@@ -1,0 +1,66 @@
+{
+  "generated_at": "2026-10-02T15:17:15.030Z",
+  "environment": "isolated PostgreSQL 16 / runtime non-owner role",
+  "results": [
+    {
+      "test": "T01/T02 concurrent canonical checkout posts exactly once",
+      "status": "PASS"
+    },
+    {
+      "test": "T04 altered body under same UUID conflicts before recalculation",
+      "status": "PASS"
+    },
+    {
+      "test": "T03 actual HTTP response is dropped after COMMIT; stable retry returns original",
+      "status": "PASS"
+    },
+    {
+      "test": "T12 role projection, CSRF, foreign IDs and mutation immutability",
+      "status": "PASS"
+    },
+    {
+      "test": "Stock receipt and count retries preserve one ledger movement",
+      "status": "PASS"
+    },
+    {
+      "test": "T28 production demo refusal and secure password session",
+      "status": "PASS"
+    },
+    {
+      "test": "T09 concurrent manager returns cannot refund/restock the final unit twice",
+      "status": "PASS"
+    },
+    {
+      "test": "T10/T30 final rounding remainder and damaged returns",
+      "status": "PASS"
+    },
+    {
+      "test": "T07/T11 price revisions and receipt snapshots remain immutable",
+      "status": "PASS"
+    },
+    {
+      "test": "T08/T22 valid historical offline replay posts shortage with flag; stale counts fail",
+      "status": "PASS"
+    },
+    {
+      "test": "T25 unknown, expired and revoked permits preserve quarantined documents",
+      "status": "PASS"
+    },
+    {
+      "test": "T27 reporting excludes tender and applies refunds to their business date",
+      "status": "PASS"
+    },
+    {
+      "test": "T13/T29 cash movements, reconciliation, pending blocker and variance",
+      "status": "PASS"
+    },
+    {
+      "test": "all ledger balances, sale line sums and payment amounts reconcile",
+      "status": "PASS"
+    },
+    {
+      "test": "health liveness remains independent of schema readiness",
+      "status": "PASS"
+    }
+  ]
+}

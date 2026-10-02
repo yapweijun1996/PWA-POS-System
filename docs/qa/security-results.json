@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-10-02T15:37:11.757Z",
+  "status": "PASS",
+  "source_files_scanned": 126,
+  "public_text_files_scanned": 21,
+  "checks": [
+    "Known cloud/API/private-key patterns in non-ignored source",
+    "No database URLs, owner role or permit configuration in client sources/built assets"
+  ],
+  "scope": "Pattern scan and public bundle inspection; not a penetration test or proof against every possible secret format. Fixtures and screenshots use synthetic data."
+}

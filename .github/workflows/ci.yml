@@ -1,0 +1,45 @@
+name: verify
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16.13
+        env:
+          POSTGRES_USER: counter_pos_owner
+          POSTGRES_PASSWORD: local-ci-only
+          POSTGRES_DB: counter_pos_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U counter_pos_owner -d counter_pos_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://counter_pos_owner:local-ci-only@127.0.0.1:5432/counter_pos_test
+      PG_BIN: /usr/bin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run format:check
+      - run: npm run security:check
+      - run: npm test
+      - run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+      - name: Configure isolated CI runtime role
+        run: psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -c "ALTER ROLE counter_pos_app PASSWORD 'local-ci-only'"
+      - run: npm run test:integration
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm run backup:rehearse
+      - run: npm audit --audit-level=moderate
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-evidence
+          path: docs/qa/

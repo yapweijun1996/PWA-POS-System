@@ -48,3 +48,7 @@ Approve or replace working brand/repo, target hosting machine, actual package ve
 ## Honest completion model
 
 A documentation bundle can be complete while application development has not begun. Report artefact generation/validation separately from production software readiness. No arbitrary overall project percentage is assigned here.
+
+## Implementation follow-up — 2 October 2026
+
+The authorized local implementation is now recorded in `docs/adr/001-v1-implementation.md`. That ADR resolves implementation defaults and documents contract differences; the working name, license, physical hardware and production environment remain open. Actual evidence is in `docs/qa/REPORT.md`. Earlier chapters and PDFs describe the original design baseline rather than the runtime's verified status.

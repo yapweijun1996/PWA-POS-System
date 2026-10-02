@@ -1,0 +1,53 @@
+{
+  "name": "counter-pos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0 <25"
+  },
+  "scripts": {
+    "dev": "tsx scripts/dev.ts",
+    "dev:db": "tsx scripts/database.ts start",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "build": "tsc --noEmit && vite build --config apps/web/vite.config.ts",
+    "typecheck": "tsc --noEmit",
+    "start": "tsx apps/api/src/main.ts",
+    "test": "vitest run tests/unit",
+    "test:integration": "tsx scripts/integration.ts",
+    "test:e2e": "playwright test",
+    "check": "npm run build && npm test && npm run test:integration",
+    "backup:rehearse": "tsx scripts/backup.ts",
+    "demo": "tsx scripts/demo.ts",
+    "format:check": "prettier --check apps packages scripts tests playwright.config.ts tsconfig.json package.json",
+    "contracts": "tsx scripts/contracts.ts",
+    "setup": "tsx scripts/setup.ts",
+    "security:check": "tsx scripts/security.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "11.1.2",
+    "@fastify/rate-limit": "11.2.0",
+    "@fastify/static": "10.1.5",
+    "dexie": "4.4.6",
+    "fastify": "5.12.5",
+    "pg": "8.23.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.10.1",
+    "@types/pg": "8.15.6",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.1.1",
+    "prettier": "3.9.9",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vite": "8.3.2",
+    "vitest": "5.0.3",
+    "yaml": "2.9.1"
+  }
+}

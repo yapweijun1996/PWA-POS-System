@@ -1,4 +1,6 @@
-# Delivery validation report
+# Historical design-kit validation report
+
+> Historical report from the design-kit phase. The current implementation and executed application tests are in [docs/qa/REPORT.md](../docs/qa/REPORT.md). Earlier NOT RUN statements below describe that phase, not the present application.
 
 **Date:** 2 October 2026. **Scope:** documentation files, visual studies and the in-memory interaction prototype. These results are NOT tests of an implemented POS backend, real offline synchronization, payment integration or deployed infrastructure.
 

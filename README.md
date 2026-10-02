@@ -1,46 +1,80 @@
-# Counter POS · PWA POS Design Kit
-## Product specification, engineering contracts and visual handoff
+# Counter POS
 
-**Version:** 1.0 · **Prepared:** 2 October 2026 · **For:** Yap Wei Jun  
-**Status:** Proposed implementation baseline, not a deployed or production-certified POS.  
-**Working name:** Counter POS. Branding, repository name and software license are not approved or trademark-cleared.
+A responsive, single-store PWA point of sale and inventory ledger with bounded offline cash selling. Implemented from this repository's product and engineering Markdown specifications.
 
-中文：这是一套可交给 AI Agent 或开发者执行的完整设计文档，不是已开发完成的收银系统。先打开 `START-HERE.html` 查看文档导航、线框图和视觉稿；本地交互示例在 `prototype/index.html`。示例不连接数据库、不收款、不提供真实离线同步。
+**Local V1 implementation. Synthetic demonstration. No real payment or ERP integration.** Working name and software license remain unapproved. Physical-device and production readiness are separate from the automated checks.
 
-## Start here
+![Implemented desktop sell screen](docs/qa/screenshots/sell-1440.png)
 
-| Need | File |
-|---|---|
-| Browse the complete kit | [START-HERE.html](START-HERE.html) |
-| Understand the proposal in Mandarin | [中文导读](docs/00-zh-CN-overview.md) |
-| Read the complete specification | [Product and Engineering Handbook](pdf/PWA-POS-Handbook.pdf) |
-| Review the visual direction | [UI Design Atlas](pdf/UI-Design-Atlas.pdf) |
-| Try product selection, cart and simulated checkout | [Local interaction prototype](prototype/index.html) |
-| Implement the project | [AI Agent implementation brief](prompts/IMPLEMENTATION-TASK.md) |
-| Inspect API / schema | [OpenAPI](specs/openapi.yaml) · [PostgreSQL reference schema](specs/schema.sql) |
-| Check what was actually validated | [Delivery validation](validation/REPORT.md) |
+## Run the application
 
-## Product in one sentence
+Use Node **24.19.0** and PostgreSQL **16**. The local database launcher defaults to the Homebrew PostgreSQL 16 binaries; set `PG_BIN` on other machines. See the [local development runbook](docs/runbooks/local-development.md) for Docker and configuration details.
 
-A lightweight, responsive POS and stock ledger for a small retailer, with a deliberately bounded offline cash-selling workflow and an optional future ERP adapter.
+```sh
+npm ci
+npm run dev:db
+npm run build
+npm run demo
+```
 
-The intended V1 covers product maintenance, stock receipts and adjustments, a fast product-to-cart flow, one payment method per sale, receipts, online manager-controlled returns, daily summaries and shift close. The main evidence for a portfolio should be reliable transactions, understandable UX and reproducible failure-recovery tests—not a long list of unimplemented features.
+Open [the local application](http://localhost:3000), enter the manager demo and open a cash shift. Add **2 Cold Brew + Oat Cookies + Sparkling Water**, collect **20.00** for a **14.00** basket, and show **6.00** change. The demo uses actual PostgreSQL transactions and IndexedDB persistence; refreshing preserves records. The synthetic entry point is disabled in production and contains no fixed public password.
 
-## Important boundaries
+For code editing, `npm run dev` starts Vite plus the API. Test offline/install/update behavior using the built application, since Vite development mode does not register the production worker.
 
-- **Design baseline, not approval:** the proposed stack is React + TypeScript + Vite, Fastify, PostgreSQL and IndexedDB through Dexie. Versions must be pinned and compatibility checked when implementation begins.
-- **Offline is bounded:** after online enrollment, login, catalogue download and shift opening, cash sales can be stored locally under a valid offline permit. First login, product/stock administration, refunds and final shift close require connectivity.
-- **Electronic payments:** Card and PayNow are manually recorded external payments in V1, online only. A cashier's entry is not provider verification. There is no gateway, terminal SDK, automatic settlement or bank-confirmed webhook in this kit.
-- **Demo versus real use:** all products, receipts and dashboard data are synthetic. The included HTML is an in-memory interaction prototype; refreshing resets it. Do not use it to operate a shop.
-- **Taxes:** the sample store has tax disabled. No SG/MY tax registration, tax rate, receipt or e-invoicing compliance is claimed.
-- **No infrastructure changes:** this delivery does not create a GitHub repo, modify an existing project, deploy services or connect to Globe3.
+## Capability status
 
-## Reading order
+| Capability | Implementation / evidence |
+| --- | --- |
+| Cookie authentication, roles, CSRF, named terminal, one shift | Implemented; PostgreSQL authorization/immutability checks |
+| Products, categories, archive and immutable price revisions | Implemented; paginated administration, stale edits and historical receipts tested |
+| Stock receipt/count adjustment and immutable ledger | Implemented; stable retry IDs, version conflicts and ledger reconciliation tested |
+| Search, keyboard-wedge input, quantity, undo and local holds | Implemented; browser input/focus tested; physical scanner NOT RUN |
+| Cash and one manual external Card/PayNow record | Implemented; offline external methods blocked; no provider verification |
+| Atomic sale posting and permanent UUID/hash replay | Tested concurrently and with an actual dropped response after COMMIT |
+| Linked manager refunds, cumulative rounding and restock choice | Concurrency, partial remainder and damaged-return checks |
+| Daily totals, low stock, CSV of shown rows, audit history | Implemented; reports exclude tender and pending-local amounts |
+| Cash in/out, count draft, terminal reconciliation and close | Implemented; pending/quarantine/negative-stock/variance gates |
+| IndexedDB atomic sale/outbox, writer lease and foreground retry | Reload, quota abort, lease takeover, auth recovery and watermark tests |
+| Installable shell and explicit safe worker update | Actual N→N+1 waiting-worker test with pending data |
+| Encrypted browser recovery and database restore rehearsal | Implemented and exercised in synthetic isolated environments |
+| ERP adapter / automated payments / fiscal compliance | Deferred; no live integration or compliance claim |
 
-Read product requirements → business rules → screens/design system → architecture/offline sync → database/API → security/testing → implementation/deployment. The source register separates verified platform facts from new design decisions. When artefacts disagree, follow `docs/15-decisions-risks.md` rather than inferring behavior from a screenshot.
+The [implementation ADR](docs/adr/001-v1-implementation.md) records all defaults and contract clarifications. The [QA report](docs/qa/REPORT.md) states exact executed checks and physical/remote items not run. The original [design-bundle validation](validation/REPORT.md), PDFs and HTML prototype remain historical design evidence.
 
-## Delivery layout
+## Verify
 
-`docs/` contains editable Markdown. `pdf/` is the reading edition. `design/` contains PNG screens, SVG/PNG wireframes, diagrams and design tokens. `specs/` contains machine-readable contracts and synthetic fixtures. `prototype/` is the local interaction study. `prompts/` provides the engineering handoff. `validation/` states the checks performed on this bundle.
+```sh
+npm run build
+npm run format:check
+npm run security:check
+npm test
+npm run test:integration
+npx playwright install chromium
+npm run test:e2e
+npm run backup:rehearse
+npm audit --audit-level=moderate
+```
 
-Extract the ZIP before opening HTML so relative images and links resolve. No package installation, CDN or account is needed to browse the kit. Use a modern browser. A PWA implementation will need HTTPS or a trusted local development origin; simply opening this design prototype does not install a PWA. [S02]
+Run database tests sequentially. Test launchers reset only the loopback `counter_pos_test` fixture database and refuse other names/hosts. CI is defined in `.github/workflows/ci.yml`; a local pass does not claim that remote CI ran.
+
+## Structure and integrity
+
+- `apps/web`: React/TypeScript, Dexie, responsive cash workflow and shell update UX.
+- `apps/api`: Fastify modules for authentication, catalogue, stock, sales, returns, shifts and reporting.
+- `packages/domain`: bounded integer money, tax and cumulative refund allocation.
+- `packages/contracts`: runtime input validation and shared DTOs.
+- `infra/migrations`: ordered transactionally recorded SQL and a separate non-owner runtime role.
+- `tests`: pure rules, disposable PostgreSQL integration, and real Chromium browser scenarios.
+- `docs/qa`: actual execution evidence and screenshots; `docs/runbooks`: operating/recovery instructions.
+- `specs`: implemented [OpenAPI](specs/openapi.yaml), original reference schema and synthetic fixtures.
+- `design`, `prototype`, `reading`, `pdf`: preserved design kit. Open `START-HERE.html` for the original specification navigation.
+
+A client sale UUID is permanent; a receipt number is display metadata. Cash tender is not revenue. Sale/payment/stock/audit commit together, and identical replay returns the original receipt. Prices/names are frozen in historical lines. Stock is a ledger plus its transactional projection. Refunds are immutable linked records, with cumulative allocation preserving the final cent.
+
+## Offline and recovery boundaries
+
+Complete online sign-in, catalogue download, local storage self-test, device enrollment and shift opening first. Permits allow cash only for at most twelve hours and 200 sales, with no offline discounts. First login, product/stock changes, refunds and final close require the server. A reload while disconnected preserves queued sales but blocks new sales until trustworthy time is re-established online.
+
+“Saved on this device” is distinct from “Synced”. Open the app to finish foreground sync. Browser storage may be cleared/evicted or lost with the device; it is not a backup. Never delete pending records to recover a failure. Read the [recovery runbook](docs/runbooks/recovery.md) before handling a review case or backup.
+
+No deployment, public publishing, live migration, real customer data, payment provider, Globe3 write, hardware certification or legal tax setup is included. The next release gate is physical iPhone/Android/thermal-printer/scanner verification and reviewed operational backup/hosting configuration.
