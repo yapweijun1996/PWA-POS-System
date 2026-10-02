@@ -54,7 +54,9 @@ jobs:
         if: always()
         with:
           name: qa-evidence
-          path: docs/qa/
+          path: |
+            docs/qa/
+            test-results/
 
   pages-build:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

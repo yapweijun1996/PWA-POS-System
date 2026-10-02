@@ -1057,6 +1057,10 @@ test("T26 multiple pending stock documents retain one projection across a lost a
   await page.getByRole("button", { name: "Sync center", exact: true }).click();
   await page.getByRole("button", { name: "Sync now", exact: true }).click();
   await expect(page.getByText("RETRY", { exact: true })).toHaveCount(2);
+  // Keep the fault installed until the entire manual drain and refresh finish.
+  await expect(
+    page.getByRole("button", { name: "Sync now", exact: true }),
+  ).toBeEnabled();
   expect((await stores(page)).deltas).toBe(1);
   await page.getByRole("button", { name: "Sell", exact: true }).click();
   expect(await quantity()).toBe(original - 2);
