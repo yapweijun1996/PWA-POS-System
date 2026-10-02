@@ -29,7 +29,9 @@
     "backup:restore": "tsx scripts/operations/cli.ts restore",
     "release:check": "tsx scripts/operations/cli.ts release-check",
     "production:rehearse": "tsx scripts/operations/rehearse-production.ts",
-    "test:browser-matrix": "tsx scripts/browser-matrix.ts"
+    "test:browser-matrix": "tsx scripts/browser-matrix.ts",
+    "build:pages": "tsc --noEmit && vite build --config apps/pages/vite.config.ts",
+    "test:pages": "playwright test --config tests/pages/playwright.config.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.2",

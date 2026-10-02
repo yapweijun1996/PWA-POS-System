@@ -6,6 +6,12 @@ A responsive, single-store PWA point of sale and inventory ledger with bounded o
 
 ![Implemented desktop sell screen](docs/qa/screenshots/sell-1440.png)
 
+## GitHub Pages demonstration
+
+[Open the static demonstration](https://yapweijun1996.github.io/PWA-POS-System/). This is a separate browser-only simulation with the reviewed synthetic catalogue, cart, cash receipts, stock and local demo storage. It does not connect to accounts, the database, real payments or production synchronization.
+
+Main-branch GitHub Actions builds and deploys only dist/pages-demo after the verification job succeeds. See [Pages deployment and testing](docs/runbooks/github-pages.md).
+
 ## Run the application
 
 Use Node **24.19.0** and PostgreSQL **16**. The local database launcher defaults to the Homebrew PostgreSQL 16 binaries; set `PG_BIN` on other machines. See the [local development runbook](docs/runbooks/local-development.md) for Docker and configuration details.

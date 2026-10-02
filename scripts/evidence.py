@@ -39,6 +39,9 @@ for name in ['chromium', 'webkit']:
     result = read(f'browser-results-{name}-focused.json')['stats']
     assert result['expected'] == 2 and result['unexpected'] == result['flaky'] == result['skipped'] == 0, name
     followups[name] = result
+pages = read('pages-results.json')['stats'] if (qa / 'pages-results.json').exists() else None
+if pages:
+    assert pages['expected'] == 2 and pages['unexpected'] == pages['flaky'] == pages['skipped'] == 0
 assert read('backup-results.json')['status'] == 'PASS'
 operations = read('production-operations-results.json')
 assert operations['status'] == 'PASS'
@@ -53,11 +56,11 @@ files = subprocess.check_output(['git', 'ls-files', '--cached', '--others', '--e
 selected = {'.env.example', '.dockerignore', '.gitignore', '.gitattributes', '.nvmrc', 'package.json', 'package-lock.json', 'tsconfig.json', 'tsconfig.server.json', 'playwright.config.ts'}
 sources = {name: sha(root / name) for name in sorted(set(files)) if name and (name in selected or name.startswith(('apps/', 'packages/', 'scripts/', 'tests/', 'infra/', '.github/'))) and (root / name).is_file()}
 fingerprint = hashlib.sha256(json.dumps(sources, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
-built = {p.relative_to(root).as_posix(): sha(p) for folder in ('dist/web', 'build/server') for p in sorted((root / folder).rglob('*')) if p.is_file()}
+built = {p.relative_to(root).as_posix(): sha(p) for folder in ('dist/web', 'build/server', 'dist/pages-demo') for p in sorted((root / folder).rglob('*')) if p.is_file()}
 worker = (root / 'dist/web/sw.js').read_text()
 build_id = re.search(r"counter-shell-[a-f0-9]+", worker).group(0)
 write('build-metadata.json', {'generated_at': now, 'git_baseline_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root).decode().strip(), 'branch': subprocess.check_output(['git', 'branch', '--show-current'], cwd=root).decode().strip(), 'git_state': 'Verified working snapshot before commit; the enclosing commit and hashes identify delivered source. No public deployment is implied.', 'source_fingerprint_sha256': fingerprint, 'source_hashes': sources, 'build_id': build_id, 'built_hashes': built, 'production_container_evidence': 'production-operations-results.json'})
 with (root / 'specs/test-cases.csv').open(newline='') as stream:
     acceptance = Counter(row['status'] for row in csv.DictReader(stream))
-write('summary.json', {'generated_at': now, 'build_id': build_id, 'source_fingerprint_sha256': fingerprint, 'unit_tests': unit['numPassedTests'], 'integration_groups': len(integration['results']), 'browser_tests': browsers, 'browser_harness_followups': followups, 'acceptance_status_counts': dict(acceptance), 'backup_rehearsal': 'PASS', 'production_container_drill': 'PASS', 'audit_vulnerabilities': 0, 'readiness': 'Production implementation/package verified locally; public deployment, off-host operations and physical acceptance remain explicit gates.'})
+write('summary.json', {'generated_at': now, 'build_id': build_id, 'source_fingerprint_sha256': fingerprint, 'unit_tests': unit['numPassedTests'], 'integration_groups': len(integration['results']), 'browser_tests': browsers, 'browser_harness_followups': followups, 'static_pages_demo': pages, 'acceptance_status_counts': dict(acceptance), 'backup_rehearsal': 'PASS', 'production_container_drill': 'PASS', 'audit_vulnerabilities': 0, 'readiness': 'Production implementation/package verified locally; public deployment, off-host operations and physical acceptance remain explicit gates.'})
 print(f"PASS evidence: {unit['numPassedTests']} unit tests, {len(integration['results'])} integration groups, " + ', '.join(f"{v['expected']} {k}" for k, v in browsers.items()))

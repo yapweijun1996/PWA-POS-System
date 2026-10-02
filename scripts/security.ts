@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { readdir, readFile, mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -19,6 +20,7 @@ async function walk(folder: string) {
   }
 }
 await walk("dist/web");
+if (existsSync("dist/pages-demo")) await walk("dist/pages-demo");
 const patterns = [
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
   /\bAKIA[0-9A-Z]{16}\b/,
@@ -41,7 +43,11 @@ for (const path of [...new Set([...files, ...publicFiles])]) {
       "Credential pattern detected; inspect locally (values withheld)",
     );
   sourceCount++;
-  if (path.startsWith("apps/web/") || path.startsWith("dist/web/")) {
+  if (
+    ["apps/web/", "dist/web/", "apps/pages/", "dist/pages-demo/"].some(
+      (prefix) => path.startsWith(prefix),
+    )
+  ) {
     assert.ok(
       !/(?:postgres(?:ql)?:\/\/|PERMIT_SECRET|BEGIN PRIVATE KEY|counter_pos_owner)/.test(
         content,

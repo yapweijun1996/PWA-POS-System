@@ -1,5 +1,5 @@
 name: verify
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
 concurrency:
@@ -31,6 +31,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - run: npm run build:pages
       - run: npm run format:check
       - run: npm run security:check
       - run: npm test -- --reporter=json --outputFile=docs/qa/unit-results.json
@@ -43,6 +44,7 @@ jobs:
         run: psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -c "ALTER ROLE counter_pos_app PASSWORD 'local-ci-only'"
       - run: npm run test:integration
       - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:pages
       - run: npm run test:e2e
       - run: npm run test:browser-matrix
       - run: npm run backup:rehearse
@@ -53,3 +55,44 @@ jobs:
         with:
           name: qa-evidence
           path: docs/qa/
+
+  pages-build:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Build static demonstration
+        run: npm run build:pages
+        env:
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+          RELEASE_REVISION: ${{ github.sha }}
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist/pages-demo
+  pages-deploy:
+    needs: pages-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy verified demonstration
+        id: deployment
+        uses: actions/deploy-pages@v4

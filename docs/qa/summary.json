@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-10-02T17:15:30.499806+00:00",
+  "generated_at": "2026-10-02T23:44:23.657392+00:00",
   "build_id": "counter-shell-15ccf600ed68778f",
-  "source_fingerprint_sha256": "a4247a06ae1054d8578e34a525b13126cedd8a3d466a7549f3247a668fc9891e",
+  "source_fingerprint_sha256": "f7a10b66f91a7511566995164b355181e420c2a9545bc3c384b91969f497c765",
   "unit_tests": 27,
   "integration_groups": 29,
   "browser_tests": {
@@ -47,6 +47,14 @@
       "unexpected": 0,
       "flaky": 0
     }
+  },
+  "static_pages_demo": {
+    "startTime": "2026-10-02T23:41:50.419Z",
+    "duration": 2182.497,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
   },
   "acceptance_status_counts": {
     "PASS_AUTOMATED": 26,
