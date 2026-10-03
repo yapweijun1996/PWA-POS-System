@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-10-03T00:02:43.733380+00:00",
-  "git_baseline_sha": "8499e5a02365115c670c8ad3dd624f33a9239cda",
+  "generated_at": "2026-10-03T00:09:16.484921+00:00",
+  "git_baseline_sha": "072f73adcf60970147e5604699170924f021c161",
   "branch": "codex/production-hardening",
   "git_state": "Verified working snapshot before commit; the enclosing commit and hashes identify delivered source. No public deployment is implied.",
-  "source_fingerprint_sha256": "da6e325a90a38bdefa77dc170d4b850e7c5dc696ee4e2302dbea7418058140cc",
+  "source_fingerprint_sha256": "a335023ead7c7a747cbff73b8c361fad005ee0094a36372b5262f5c5a56ccf8f",
   "source_hashes": {
     ".dockerignore": "36545aa2d2dcc1b7f619100c53280f64b04e035b9c1135b333d28f68e4c72fea",
     ".env.example": "718a66da1647437e268271a0f541aee7fbc59de809c908accfb90e9c9aa95499",
@@ -102,7 +102,7 @@
     "scripts/security.ts": "ff281c3f930ebcf013db9f3f0dd94ea67a331bfb328ec28a65edac2eeb500fb0",
     "scripts/seed.ts": "b0049761f4cf1ea227b4de0ca2ea33193b1b36d471e3a1f35afd56670fbd7fc8",
     "scripts/setup.ts": "4950c0f6666d9a15ce100809f0150e29db88ef3fcf56cc328135c7cabf6ffec6",
-    "tests/e2e/pos.spec.ts": "67f78402353b717ed1b439a3583a5fc1a03566e8279a26e8e4572de365e1a739",
+    "tests/e2e/pos.spec.ts": "f5c49340257a5cacaadb889aa616039ef5cadba92a961b0820ea8df5afe52a66",
     "tests/integration/production-security.ts": "60e15b042ed0a6807db481af633831cc7cc7b9ac4d633e6304c8fa0fd39aed44",
     "tests/integration/recovery-disposition.ts": "ede5d001b95241cf77da3fcf5a44ba9b137ca6efbe1b4685d33dc59bf2813864",
     "tests/integration/transactions.ts": "b88959ba1e2d684ef9c58bb883a213390de34d1cb8bbe64d7867853e618bc23e",

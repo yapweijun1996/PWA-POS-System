@@ -500,10 +500,13 @@ test("T18 fresh offline launch gives an honest unavailable browser state", async
   await context.setOffline(true);
   const page = await context.newPage();
   await expect(page.goto("/")).rejects.toThrow();
+  // Firefox may reload its error page when connectivity returns; close it first.
+  await page.close();
   await context.setOffline(false);
-  await page.goto("/");
+  const onlinePage = await context.newPage();
+  await onlinePage.goto("/");
   await expect(
-    page.getByRole("button", { name: "Enter manager demo" }),
+    onlinePage.getByRole("button", { name: "Enter manager demo" }),
   ).toBeVisible();
 });
 for (const viewport of [

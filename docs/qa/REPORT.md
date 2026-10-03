@@ -65,3 +65,5 @@ Card/PayNow remain manual external records; real payment-provider/ERP integratio
 The first GitHub branch run exposed a timing-dependent T26 failure after fault injection. The fixture now waits for the complete manual drain and refresh before removing the network fault; eight consecutive local repetitions passed. CI retains Playwright failure traces with QA evidence. The final Actions run is authoritative for remote validation.
 
 The subsequent GitHub Linux run passed browser, backup and dependency checks, then exposed a host/operator UID mismatch while reading the private restore report. The production drill now reads that report through the same operator container and asserts mode 0600; the local production drill passed after this change.
+
+A later Linux Firefox run exposed browser error-page auto-navigation racing the fresh-online launch in T18. The fixture closes the failed offline page before reopening online in the same context, retaining both unavailable-offline and available-online assertions. Eight repetitions each passed in Firefox and WebKit after this change.
