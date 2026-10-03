@@ -63,3 +63,5 @@ This work fixed unversioned inventory pagination and lost-ACK double deduction, 
 Card/PayNow remain manual external records; real payment-provider/ERP integration, fiscal/tax policy, retention and shop-specific approval are outside this single-store implementation contract. All tests use synthetic data. Live promotion requires the chosen server/domain, approved private secrets and backup destination, exact-commit CI and physical shop-terminal acceptance.
 
 The first GitHub branch run exposed a timing-dependent T26 failure after fault injection. The fixture now waits for the complete manual drain and refresh before removing the network fault; eight consecutive local repetitions passed. CI retains Playwright failure traces with QA evidence. The final Actions run is authoritative for remote validation.
+
+The subsequent GitHub Linux run passed browser, backup and dependency checks, then exposed a host/operator UID mismatch while reading the private restore report. The production drill now reads that report through the same operator container and asserts mode 0600; the local production drill passed after this change.

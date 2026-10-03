@@ -545,9 +545,22 @@ try {
     "operations",
     "restore",
   ]);
-  const restoreResult = JSON.parse(
-    await readFile(join(backups, archiveName + ".restore-result.json"), "utf8"),
+  // Linux bind mounts retain the operator UID and 0600 mode; read as that UID.
+  const restoreEvidence = JSON.parse(
+    await compose([
+      "run",
+      "--rm",
+      "--entrypoint",
+      "node",
+      "operations",
+      "--input-type=module",
+      "-e",
+      'import { readFile, stat } from "node:fs/promises"; const file = process.argv[1]; console.log(JSON.stringify({ mode: (await stat(file)).mode & 0o777, result: JSON.parse(await readFile(file, "utf8")) }));',
+      "/backups/" + archiveName + ".restore-result.json",
+    ]),
   );
+  assert.equal(restoreEvidence.mode, 0o600);
+  const restoreResult = restoreEvidence.result;
   assert.equal(restoreResult.status, "ISOLATED_RESTORE_VERIFIED");
   assert.equal(restoreResult.restored_table_counts.sales, 1);
   assert.equal(restoreResult.restored_table_counts.refunds, 1);
