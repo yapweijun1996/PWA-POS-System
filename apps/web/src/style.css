@@ -295,16 +295,23 @@ form {
   .sell-layout {
     grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
   }
-  .order {
-    position: sticky;
-    top: 0;
+}
+@media (min-width: 900px) {
+  .app-shell {
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .sell-layout {
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .sell-layout .order {
     height: 100%;
+    min-height: 0;
     overflow: hidden;
   }
-  .order-body {
+  .sell-layout .order-body {
     min-height: 0;
   }
-  .cart-lines {
+  .sell-layout .cart-lines {
     min-height: 0;
     overflow-y: auto;
   }
