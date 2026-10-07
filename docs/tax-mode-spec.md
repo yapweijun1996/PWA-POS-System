@@ -1,12 +1,14 @@
 # Configurable tax design spec (SG GST / MY SST)
 
-Status: DRAFT, no code written. Drafted by the pi coding agent (read-only), reviewed 2026-10-07.
+Status: DRAFT, no API/UI code written. Drafted by the pi coding agent (read-only), reviewed 2026-10-07. Scope widened 2026-10-07: owner goal is market-standard parity ("what other POS products have, we should have too").
 
-## Owner decisions proposed (pending confirmation)
+## Owner decisions (confirmed 2026-10-07)
 
+- Direction: standardise to market parity (StoreHub / Qashier / Square-class SME POS). Counter POS is no longer deliberately narrow.
 - Singapore new store: default `inclusive`, GST 9%.
 - Malaysia new store: no default; the owner must choose the mode and tax codes at setup.
-- 5-cent cash rounding: cash only, deferred (not in the first tax release).
+- 5-cent cash rounding: cash only. Now part of Batch 1, but only after the cash-reconciliation design in "Parity batch 1" is agreed.
+- Parity feature list below is the owner-approved batching; the competitor feature list is from general market knowledge and not yet verified vendor by vendor.
 
 ## Review notes
 
@@ -16,7 +18,6 @@ Status: DRAFT, no code written. Drafted by the pi coding agent (read-only), revi
 - Concern: binding the offline permit to the tax configuration version is UNVERIFIED in the current code; read `apps/api` permit code first.
 
 ---
-
 
 ## 1. Current state
 
@@ -41,6 +42,7 @@ Use a new additive migration; backfill existing sales/lines with their recorded 
 Use integer minor units, nonnegative amounts, half-up rounding. Discount reduces taxable base. For inclusive tax, base = round-half-up(price × 10000 / (10000 + rate)); tax = price − base. Exclusive tax = round-half-up(base × rate / 10000). Tax per line, then sum by code for the receipt. This matches existing code’s line-level rounding and avoids basket-dependent changes. No compound taxes in this scope.
 
 Examples (single quantity, no discount; currency shown in major units):
+
 1. **SG inclusive GST 9%:** shelf S$10.00 = 1000 cents; base 917 cents, GST 83 cents; due S$10.00.
 2. **SG exclusive GST 9%:** base S$10.00; GST 90 cents; due S$10.90.
 3. **MY exclusive sales tax 10%:** base RM10.00; tax RM1.00; due RM11.00.
@@ -56,6 +58,18 @@ Server validates mode, code, rate and all derived amounts; client-submitted tota
 
 Owner settings: mode and tax-code management; product editor: assign code, label/rate visibility. Sell screen replaces “Tax off” with active mode and clearly displays tax-inclusive/exclusive pricing. Receipt shows line tax and grouped tax totals, correct jurisdiction label, and inclusive-price statement where required. Refund view shows original tax allocation.
 
+## Parity batch 1 (tax and payments)
+
+Build order matters because each step changes the schema or the posted-sale contract:
+
+1. Tax mode, tax codes and per-line snapshots (this spec, sections 2 to 5).
+2. Payment methods as a configurable list: Cash, Card, PayNow, DuitNow. Card and QR are recorded manually; no terminal integration in this batch.
+3. Split tender: replaces V1's one payment row per sale with `sale_payments` (many rows per sale). Rule: sum of payments = sale total (or total + cash rounding adjustment). Refunds must say which payment method is returned.
+4. 5-cent cash rounding (cash tender only): store the rounding adjustment as its own signed field so total and tax stay untouched. Open point: how a rounded cash payment reconciles with the shift cash count.
+5. Service charge (percentage line on the sale). Open point for the accountant: whether it is taxed (SG GST normally applies; MY service tax rules differ). Do not guess; make it configurable per store.
+
+Steps 3 and 4 touch the immutable-history triggers and the offline permit contract, so each needs its own migration and e2e. Check the offline permit code before step 1 is finished.
+
 ## 6. Tests to add
 
 **Unit:** inclusive/exclusive calculations, zero/off mode, mixed codes, discounts, boundary rates, half-cent rounding, line-vs-receipt divergence, 5-cent adjustment, and partial/final refunds retaining original snapshots.
@@ -64,9 +78,9 @@ Owner settings: mode and tax-code management; product editor: assign code, label
 
 ## 7. Risks and out of scope
 
-Tax eligibility, rates, inclusive-price obligations, receipt wording, rounding and retention require jurisdictional/accounting review; research notes are not legal advice. E-invoicing, fiscalisation, service charge, compound taxes, split tender and tax exports are out of scope.
+Tax eligibility, rates, inclusive-price obligations, receipt wording, rounding and retention require jurisdictional/accounting review; research notes are not legal advice. E-invoicing (MyInvois, InvoiceNow), fiscalisation, compound taxes and tax exports are out of scope for Batch 1. Service charge and split tender moved into Batch 1 (see "Parity batch 1").
 
-## 8. Owner questions
+## 8. Owner questions (remaining)
 
 - Default mode for new SG and MY stores?
 - Which MY goods/services and rates apply, and may a shop mix tax types?
