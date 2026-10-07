@@ -1,0 +1,10 @@
+#!/bin/sh
+# Auto-format staged files, then typecheck. Keeps CI format:check/build green.
+# Enable once per clone: git config core.hooksPath .githooks
+export PATH="$HOME/.local/share/yap-runtime/node-v24.20.0-darwin-arm64/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|json)$' | grep -E '^(apps|packages|scripts|tests)/|^(playwright\.config\.ts|tsconfig.*\.json|package\.json)$' || true)
+if [ -n "$FILES" ]; then
+  echo "$FILES" | xargs npx prettier --write >/dev/null
+  echo "$FILES" | xargs git add
+fi
+npx tsc --noEmit || { echo "pre-commit: typecheck failed" >&2; exit 1; }
