@@ -69,6 +69,8 @@ export function sumTaxByCode(lines: TaxBreakdownInput[]) {
     integer(line.taxMinor, "taxMinor");
     const prior = grouped.get(line.code);
     if (prior) {
+      if (prior.rateBps !== line.rateBps || prior.label !== line.label)
+        throw new Error(`Tax code ${line.code} has conflicting rate or label`);
       prior.netMinor = result(BigInt(prior.netMinor) + BigInt(line.netMinor));
       prior.taxMinor = result(BigInt(prior.taxMinor) + BigInt(line.taxMinor));
     } else grouped.set(line.code, { ...line });

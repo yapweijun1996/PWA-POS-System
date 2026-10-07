@@ -28,6 +28,17 @@ describe("tax calculations", () => {
     ]);
   });
 
+  it("rejects duplicate tax codes with conflicting rates or labels", () => {
+    expect(() => sumTaxByCode([
+      { code: "GST", label: "GST", rateBps: 900, netMinor: 100, taxMinor: 9 },
+      { code: "GST", label: "GST", rateBps: 800, netMinor: 100, taxMinor: 8 },
+    ])).toThrow(/GST.*conflicting rate or label/);
+    expect(() => sumTaxByCode([
+      { code: "GST", label: "GST", rateBps: 900, netMinor: 100, taxMinor: 9 },
+      { code: "GST", label: "Goods tax", rateBps: 900, netMinor: 100, taxMinor: 9 },
+    ])).toThrow(/GST.*conflicting rate or label/);
+  });
+
   it("allocates sequential partial refunds cumulatively", () => {
     const line = { netMinor: 917, taxMinor: 82, quantity: 3 };
     const refunds = [0, 1, 2].map((alreadyRefundedUnits) =>
