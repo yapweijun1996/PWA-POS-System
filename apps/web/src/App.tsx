@@ -989,7 +989,9 @@ export function App() {
           </div>
         </aside>
         <div className="workspace">
-          <header className={"topbar " + (screen === "Sell" ? "sell-topbar" : "")}>
+          <header
+            className={"topbar " + (screen === "Sell" ? "sell-topbar" : "")}
+          >
             <div>
               <p className="eyebrow">
                 {boot.store.name.toUpperCase()} / COUNTER 01
