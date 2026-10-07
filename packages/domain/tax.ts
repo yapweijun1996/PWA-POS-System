@@ -93,7 +93,11 @@ export function allocateRefund(
   const allocated = (amount: number, count: number) =>
     roundHalfUp(BigInt(amount) * BigInt(count), BigInt(quantity));
   return {
-    netMinor: result(allocated(net, refunded + units) - allocated(net, refunded)),
-    taxMinor: result(allocated(tax, refunded + units) - allocated(tax, refunded)),
+    netMinor: result(
+      allocated(net, refunded + units) - allocated(net, refunded),
+    ),
+    taxMinor: result(
+      allocated(tax, refunded + units) - allocated(tax, refunded),
+    ),
   };
 }
