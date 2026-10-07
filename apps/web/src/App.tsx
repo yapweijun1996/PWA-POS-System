@@ -85,7 +85,8 @@ export function App() {
     cartRef = useRef(cart);
   cartRef.current = cart;
   useEffect(() => {
-    if (screen === "Sell") searchRef.current?.focus();
+    if (screen === "Sell" && window.matchMedia("(pointer: fine)").matches)
+      searchRef.current?.focus();
   }, [screen]);
   const money = (n: number) => formatMoney(n, boot?.store.currency ?? "SGD");
   const amount = cart.length

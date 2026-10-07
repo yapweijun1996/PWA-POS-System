@@ -295,14 +295,29 @@ form {
   .sell-layout {
     grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
   }
+  .order {
+    position: sticky;
+    top: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+  .order-body {
+    min-height: 0;
+  }
+  .cart-lines {
+    min-height: 0;
+    overflow-y: auto;
+  }
 }
-.topbar.sell-topbar {
-  min-height: 68px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-.sell-topbar h1 {
-  font-size: 22px;
+@media (min-width: 1280px) {
+  .topbar.sell-topbar {
+    min-height: 68px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .sell-topbar h1 {
+    font-size: 22px;
+  }
 }
 .catalogue {
   padding: 26px;
@@ -929,13 +944,6 @@ td small {
 @media (min-width: 1600px) {
   .products-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .art {
-    height: 160px;
-  }
-  .product-art {
-    height: 140px;
-    width: 160px;
   }
   .product h3 {
     font-size: 16px;
