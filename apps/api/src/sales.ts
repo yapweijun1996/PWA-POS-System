@@ -9,10 +9,33 @@ import {
   lineMoney,
   saleMoney,
 } from "../../../packages/domain/money.ts";
+import { taxConfigFingerprint } from "../../../packages/domain/tax.ts";
 import { transaction, requireThat, numbers, Problem } from "./db.ts";
 import { digest, audit, movement, openShift, type Context } from "./context.ts";
 export const permitSignature = (claims: unknown, secret: string) =>
   createHmac("sha256", secret).update(canonical(claims)).digest("hex");
+export async function currentTaxFingerprint(
+  db: pg.PoolClient,
+  storeId: string,
+) {
+  const taxSettings = (
+    await db.query("SELECT tax_enabled FROM stores WHERE id=$1", [storeId])
+  ).rows[0];
+  const taxProducts = (
+    await db.query(
+      "SELECT DISTINCT ON (pp.product_id) pp.product_id AS id,pp.tax_bps AS rate_bps FROM product_prices pp WHERE pp.store_id=$1 ORDER BY pp.product_id,pp.catalogue_version DESC",
+      [storeId],
+    )
+  ).rows;
+  return taxConfigFingerprint({
+    taxMode: taxSettings.tax_enabled ? "exclusive" : "off",
+    products: taxProducts.map((p) => ({
+      id: p.id,
+      rateBps: Number(p.rate_bps),
+      taxCode: null,
+    })),
+  });
+}
 export async function requireUnresolvedSale(
   db: pg.PoolClient,
   ctx: Context,
@@ -87,6 +110,10 @@ export async function issuePermit(
       expires_at: expires.toISOString(),
       max_sales: 200,
       revisions,
+      tax_config_fingerprint: await currentTaxFingerprint(
+        db,
+        ctx.actor.store_id,
+      ),
       discount_bps: 0,
       methods: ["CASH"],
     };
@@ -264,6 +291,24 @@ export async function postSale(
             ),
           "OFFLINE_PERMIT_INVALID",
         );
+        const hasTaxFingerprint = Object.prototype.hasOwnProperty.call(
+          permit.signed_claims,
+          "tax_config_fingerprint",
+        );
+        requireThat(
+          hasTaxFingerprint ||
+            new Date(permit.issued_at).getTime() <
+              Date.parse("2026-10-08T00:00:00.000Z"),
+          "OFFLINE_PERMIT_INVALID",
+        );
+        if (hasTaxFingerprint) {
+          requireThat(
+            permit.signed_claims.tax_config_fingerprint ===
+              (await currentTaxFingerprint(db, ctx.actor.store_id)),
+            "TAX_CONFIG_CHANGED",
+            409,
+          );
+        }
         const time = Date.parse(s.client_created_at);
         requireThat(
           time >= new Date(permit.issued_at).getTime() &&
