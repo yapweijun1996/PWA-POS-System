@@ -19,7 +19,7 @@ export const saleLine = z
   .strict();
 export const payment = z
   .object({
-    method: z.enum(["CASH", "CARD_MANUAL", "PAYNOW_MANUAL"]),
+    method: z.enum(["CASH", "CARD_MANUAL", "PAYNOW_MANUAL", "DUITNOW_MANUAL"]),
     amount_applied_minor: money,
     tender_minor: money,
     change_minor: money,
@@ -75,7 +75,9 @@ export const refundCommand = z
     original_sale_id: id,
     shift_id: id,
     reason: z.string().trim().min(1).max(500),
-    method: z.enum(["CASH", "CARD_MANUAL", "PAYNOW_MANUAL"]).default("CASH"),
+    method: z
+      .enum(["CASH", "CARD_MANUAL", "PAYNOW_MANUAL", "DUITNOW_MANUAL"])
+      .default("CASH"),
     external_reference: z.string().trim().min(1).max(120).optional(),
     operator_verified_at: z.string().datetime().optional(),
     lines: z
