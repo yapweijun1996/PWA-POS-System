@@ -16,7 +16,8 @@ paths:
     post:
       summary: Sign in online
       operationId: post__auth_login
-      description: Validate Origin and login rate limits. Set secure HttpOnly cookie;
+      description:
+        Validate Origin and login rate limits. Set secure HttpOnly cookie;
         rotate session. Never return the cookie as JSON.
       responses:
         "200":
@@ -380,7 +381,8 @@ paths:
     post:
       summary: Receive stock as a ledger movement; manager online
       operationId: post__inventory_receipts
-      description: quantity_delta must be positive. client_event_id is durable dedup
+      description:
+        quantity_delta must be positive. client_event_id is durable dedup
         identity. No purchase invoice is created.
       responses:
         "201":
@@ -671,7 +673,8 @@ paths:
     post:
       summary: Atomically post one frozen sale
       operationId: post__sales
-      description: Derive store and cashier from auth. Recompute money; verify price
+      description:
+        Derive store and cashier from auth. Recompute money; verify price
         revisions and offline permit; lock shift/balances; write sale, lines,
         payment, stock, audit and event in one transaction. Return 201 only
         after commit; 200 on identical replay. 409 on same ID with different
@@ -713,7 +716,8 @@ paths:
           in: header
           required: true
           schema: *a3
-          description: Same client_sale_id/client_refund_id on every exact retry. Changed
+          description:
+            Same client_sale_id/client_refund_id on every exact retry. Changed
             payload gives 409.
       security:
         - cookieAuth: []
@@ -766,7 +770,8 @@ paths:
     post:
       summary: Post linked manager-approved refund online
       operationId: post__refunds
-      description: Lock original lines. Calculate remaining refundable quantity and
+      description:
+        Lock original lines. Calculate remaining refundable quantity and
         cumulative rounding allocation. Commit refund, refund payment, restock
         movements and audit together. Exactly-once business effect depends on
         tested durable deduplication, not the header alone.
@@ -807,7 +812,8 @@ paths:
           in: header
           required: true
           schema: *a3
-          description: Same client_sale_id/client_refund_id on every exact retry. Changed
+          description:
+            Same client_sale_id/client_refund_id on every exact retry. Changed
             payload gives 409.
       security:
         - cookieAuth: []
@@ -927,9 +933,11 @@ paths:
             type: string
             maxLength: 80
     post:
-      summary: Read a consistent catalogue/stock page and identify already-posted
+      summary:
+        Read a consistent catalogue/stock page and identify already-posted
         local sale IDs
-      description: Read a consistent catalogue/stock page and identify already-posted
+      description:
+        Read a consistent catalogue/stock page and identify already-posted
         local sale IDs
       security:
         - cookieAuth: []
@@ -1174,7 +1182,8 @@ paths:
           schema: *a1
   /auth/password:
     post:
-      summary: Verify current password, revoke old sessions and return a replacement
+      summary:
+        Verify current password, revoke old sessions and return a replacement
         session
       description: Verify current password, revoke old sessions and return a
         replacement session
@@ -1196,7 +1205,8 @@ paths:
                 $ref: "#/components/schemas/LoginResult"
   /auth/revoke-sessions:
     post:
-      summary: Verify current password, revoke old sessions and return a replacement
+      summary:
+        Verify current password, revoke old sessions and return a replacement
         session
       description: Verify current password, revoke old sessions and return a
         replacement session
@@ -1218,7 +1228,8 @@ paths:
                 $ref: "#/components/schemas/LoginResult"
   /devices/{id}:
     patch:
-      summary: Permanently revoke terminal and offline permits; preserve existing
+      summary:
+        Permanently revoke terminal and offline permits; preserve existing
         documents
       description: Manager only; normal cookie/CSRF authorization.
       security:
@@ -1809,6 +1820,7 @@ components:
             - CASH
             - CARD_MANUAL
             - PAYNOW_MANUAL
+            - DUITNOW_MANUAL
         amount_applied_minor:
           type: integer
           minimum: 0
@@ -1943,6 +1955,7 @@ components:
                 - CASH
                 - CARD_MANUAL
                 - PAYNOW_MANUAL
+                - DUITNOW_MANUAL
             amount_applied_minor:
               type: integer
               minimum: 0
@@ -2128,6 +2141,7 @@ components:
             - CASH
             - CARD_MANUAL
             - PAYNOW_MANUAL
+            - DUITNOW_MANUAL
         external_reference:
           type: string
           minLength: 1

@@ -65,9 +65,9 @@ export function App() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [tender, setTender] = useState(""),
-    [method, setMethod] = useState<"CASH" | "CARD_MANUAL" | "PAYNOW_MANUAL">(
-      "CASH",
-    ),
+    [method, setMethod] = useState<
+      "CASH" | "CARD_MANUAL" | "PAYNOW_MANUAL" | "DUITNOW_MANUAL"
+    >("CASH"),
     [reference, setReference] = useState(""),
     [receipt, setReceipt] = useState<string | null>(null),
     [waiting, setWaiting] = useState<ServiceWorker | null>(null),
@@ -1339,23 +1339,30 @@ export function App() {
               <p className="eyebrow">AMOUNT DUE · {boot.store.currency}</p>
               <div className="payment-due">{money(amount.total_minor)}</div>
               <div className="methods">
-                {(["CASH", "CARD_MANUAL", "PAYNOW_MANUAL"] as const).map(
-                  (m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      className={method === m ? "active" : ""}
-                      disabled={!online && m !== "CASH"}
-                      onClick={() => setMethod(m)}
-                    >
-                      {m === "CASH"
-                        ? "Cash"
-                        : m === "CARD_MANUAL"
-                          ? "Card"
-                          : "PayNow"}
-                    </button>
-                  ),
-                )}
+                {(
+                  [
+                    "CASH",
+                    "CARD_MANUAL",
+                    "PAYNOW_MANUAL",
+                    "DUITNOW_MANUAL",
+                  ] as const
+                ).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    className={method === m ? "active" : ""}
+                    disabled={!online && m !== "CASH"}
+                    onClick={() => setMethod(m)}
+                  >
+                    {m === "CASH"
+                      ? "Cash"
+                      : m === "CARD_MANUAL"
+                        ? "Card"
+                        : m === "PAYNOW_MANUAL"
+                          ? "PayNow"
+                          : "DuitNow"}
+                  </button>
+                ))}
               </div>
               {method === "CASH" ? (
                 <>
