@@ -291,6 +291,41 @@ form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 348px;
 }
+@media (min-width: 1280px) {
+  .sell-layout {
+    grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
+  }
+}
+@media (min-width: 900px) {
+  .app-shell {
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .sell-layout {
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .sell-layout .order {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .sell-layout .order-body {
+    min-height: 0;
+  }
+  .sell-layout .cart-lines {
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+@media (min-width: 1280px) {
+  .topbar.sell-topbar {
+    min-height: 68px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .sell-topbar h1 {
+    font-size: 22px;
+  }
+}
 .catalogue {
   padding: 26px;
   overflow: auto;
@@ -302,6 +337,9 @@ form {
 }
 .search-row input {
   background: #fff;
+  min-height: 56px;
+  font-size: 18px;
+  border: 2px solid var(--teal);
 }
 .search-row button {
   width: 48px;
@@ -334,17 +372,17 @@ form {
 .products-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 10px;
 }
 .product {
-  padding: 10px;
+  padding: 8px;
   background: #fff;
   border-radius: 14px;
   text-align: left;
   min-width: 0;
 }
 .art {
-  height: 120px;
+  height: 96px;
   background: #e5eeeb;
   border-radius: 9px;
   position: relative;
@@ -913,16 +951,6 @@ td small {
 @media (min-width: 1600px) {
   .products-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .sell-layout {
-    grid-template-columns: minmax(0, 1fr) 390px;
-  }
-  .art {
-    height: 160px;
-  }
-  .product-art {
-    height: 140px;
-    width: 160px;
   }
   .product h3 {
     font-size: 16px;

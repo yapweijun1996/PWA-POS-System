@@ -84,6 +84,10 @@ export function App() {
     searchRef = useRef<HTMLInputElement>(null),
     cartRef = useRef(cart);
   cartRef.current = cart;
+  useEffect(() => {
+    if (screen === "Sell" && window.matchMedia("(pointer: fine)").matches)
+      searchRef.current?.focus();
+  }, [screen]);
   const money = (n: number) => formatMoney(n, boot?.store.currency ?? "SGD");
   const amount = cart.length
     ? saleMoney(
@@ -985,7 +989,9 @@ export function App() {
           </div>
         </aside>
         <div className="workspace">
-          <header className="topbar">
+          <header
+            className={"topbar " + (screen === "Sell" ? "sell-topbar" : "")}
+          >
             <div>
               <p className="eyebrow">
                 {boot.store.name.toUpperCase()} / COUNTER 01
