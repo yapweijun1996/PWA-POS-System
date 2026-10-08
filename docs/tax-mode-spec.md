@@ -52,7 +52,7 @@ Recommend **no cash rounding in the tax engine or posted sale**; show an optiona
 
 ## 4. API, offline, idempotency
 
-Server validates mode, code, rate and all derived amounts; client-submitted totals are never authoritative. Include immutable snapshots in canonical sale payload/hash. Server-signed offline permits must bind store tax configuration/catalogue version and expiry; reject stale configuration or require online refresh. Offline catalogue and local sale/outbox must persist the same price/tax snapshots atomically. Stable UUID/hash retries remain idempotent; changed tax snapshots under the same key return conflict. Permit claim changes are **UNVERIFIED** in current implementation.
+Server validates mode, code, rate and all derived amounts; client-submitted totals are never authoritative. Include immutable snapshots in canonical sale payload/hash. Server-signed offline permits bind a deterministic tax-configuration fingerprint (mode and product rates); stale local configuration must disable offline sales. **Implemented on branch, not e2e-tested.** Offline catalogue and local sale/outbox must persist the same price/tax snapshots atomically. Stable UUID/hash retries remain idempotent; changed tax snapshots under the same key return conflict.
 
 ## 5. UI
 

@@ -1,4 +1,18 @@
+import { createHash } from "node:crypto";
+
 export type TaxMode = "off" | "exclusive" | "inclusive";
+
+export function taxConfigFingerprint(input: {
+  taxMode: TaxMode;
+  products: { id: string; rateBps: number; taxCode: string | null }[];
+}): string {
+  const products = [...input.products]
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map(({ id, rateBps, taxCode }) => ({ id, rateBps, taxCode }));
+  return createHash("sha256")
+    .update(JSON.stringify({ taxMode: input.taxMode, products }))
+    .digest("hex");
+}
 
 type TaxLineInput = {
   mode: TaxMode;

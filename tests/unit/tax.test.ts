@@ -3,9 +3,37 @@ import {
   allocateRefund,
   lineTax,
   sumTaxByCode,
+  taxConfigFingerprint,
 } from "../../packages/domain/tax.ts";
 
 describe("tax calculations", () => {
+  it("fingerprints tax configuration deterministically", () => {
+    const products = [
+      { id: "b", rateBps: 800, taxCode: "GST" },
+      { id: "a", rateBps: 900, taxCode: null },
+    ];
+    const fingerprint = taxConfigFingerprint({
+      taxMode: "exclusive",
+      products,
+    });
+    expect(
+      taxConfigFingerprint({
+        taxMode: "exclusive",
+        products: [...products].reverse(),
+      }),
+    ).toBe(fingerprint);
+    expect(
+      taxConfigFingerprint({
+        taxMode: "exclusive",
+        products: products.map((p) =>
+          p.id === "a" ? { ...p, rateBps: 901 } : p,
+        ),
+      }),
+    ).not.toBe(fingerprint);
+    expect(taxConfigFingerprint({ taxMode: "off", products })).not.toBe(
+      fingerprint,
+    );
+  });
   it("calculates inclusive and exclusive taxes per line", () => {
     expect(
       lineTax({
